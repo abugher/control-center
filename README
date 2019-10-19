@@ -1,4 +1,0 @@
-git clone --recurse-submodules git@github.com:abugher/control_center.git
-cd control_center
-for d in * ansible/roles/*; do cd $d; git checkout master; cd -; done
-g
