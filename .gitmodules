@@ -1,0 +1,9 @@
+[submodule "certificate_authority"]
+	path = certificate_authority
+	url = git@github.com:abugher/certificate_authority.git
+[submodule "os_deployment"]
+	path = os_deployment
+	url = git@github.com:abugher/os_deployment.git
+[submodule "ansible"]
+	path = ansible
+	url = git@github.com:abugher/ansible_environment.git
