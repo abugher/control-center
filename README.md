@@ -7,9 +7,7 @@ If you are a contributor, prepare an instance of the repo like so:
 
     git clone --recurse-submodules git@github.com:abugher/control_center.git
     cd control_center
-    # I don't understand this part.  Without it I get told each subproject is not on a branch.
-    for d in * ansible/roles/*; do cd $d; git checkout master; cd -; done
 
-I have attempted to hide the complexity of managing nested subprojects within a program named *g*, available in the *git-automation* repository:
+I have attempted to deal with the complexity of managing nested subprojects with a program named *g*, available in the *git-automation* repository:
 
 https://github.com/abugher/git-automation
