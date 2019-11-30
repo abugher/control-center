@@ -7,3 +7,6 @@
 [submodule "ansible"]
 	path = ansible
 	url = git@github.com:abugher/ansible_environment.git
+[submodule "git-automation"]
+	path = git-automation
+	url = ./git-automation/
