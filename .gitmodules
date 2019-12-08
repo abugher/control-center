@@ -9,4 +9,4 @@
 	url = git@github.com:abugher/ansible_environment.git
 [submodule "git-automation"]
 	path = git-automation
-	url = ./git-automation/
+	url = git@github.com:abugher/git-automation.git
