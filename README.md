@@ -12,4 +12,4 @@ To get the whole collection, Do this:
 
 To sync changes up and down, try this:
 
-    ./git-automation/g
+    PATH=./git-automation g
