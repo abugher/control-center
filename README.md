@@ -3,8 +3,8 @@ It consists of several subprojects:
 
 * *ansible* - This is where most of the action happens.  Each role has a subproject.  (Sub-sub-project.)
 * *certificate\_authority* - Tools for being a CA, operational state of my own CA, and signed certificates for my hosts.
-* *os\_deployment* - Tools to apply bits to the bare metal to make the go go on the computer box.
-* *git-automation* - My whacked out idea of how revision control should work.  Slow; thorough.
+* *os\_deployment* - Tools to apply operating system images to boot media.
+* *git-automation* - A tool to manage git operations.
 
 To get the whole collection, do this:
 
