@@ -10,3 +10,6 @@
 [submodule "git-automation"]
 	path = git-automation
 	url = git@github.com:abugher/git-automation.git
+[submodule "dicelessware"]
+	path = dicelessware
+	url = git@github.com:abugher/dicelessware
