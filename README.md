@@ -17,3 +17,7 @@ those are populated.
 To sync changes up and down, try this:
 
     PATH=./git-automation g
+
+If the *sensitive\_\** subdirectories are git repositories with upstream
+repositories set (hopefully not public), *g* will recurse through those as
+well.
