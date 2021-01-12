@@ -1,0 +1,158 @@
+#!/bin/bash
+# Depends on:
+# - gawk
+
+function main() {
+  generate_root_password
+  generate_ssl_material
+  generate_ssh_host_keys
+  set_groups
+  set_host_vars
+}
+
+
+function generate_root_password() {
+  if ! pass show "${pass_user}/${target}/root" >/dev/null; then
+    output "Generating root password."
+    dicelessware/dw 5 | pass add -m \
+      || fail "Failed to generate root password."
+  fi
+
+  output "Generated root password."
+}
+
+
+function generate_ssl_material() {
+  cd "${control_center}/certificate_authority" \
+    || fail "Failed to change directory to certificate authority directory."
+  ./generate "${target}" \
+    || fail "Failed to generate SSL material."
+
+  output "Generated SSL material."
+}
+
+
+function generate_ssh_host_keys() {
+  cd "${control_center}/sensitive_ansible/inventory/hosts" \
+    || fail "Failed to change directory to the sensitive inventory of hosts directory."
+  mkdir -p "${target}/files/ssh_keys" \
+    || fail "Failed to create directory for SSH private key."
+  cd "${target}/files/ssh_keys" \
+    || fail "Failed to change directory to directory for SSH private key."
+  ssh-keygen -t rsa -b 4096 -C '' -f ./ssh_host_rsa_key < /dev/null \
+    || fail "Failed to generate SSH keys."
+
+  cd "${control_center}/ansible/inventory/hosts" \
+    || fail "Failed to change directory to the inventory of hosts directory."
+  mkdir -p "${target}/files/ssh_keys" \
+    || fail "Failed to create directory for SSH public key."
+  mv "${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/id_rsa.pub" "${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/" \
+    || fail "Failed to move public key."
+
+  output "Generated SSH host keys."
+}
+
+
+function set_groups() {
+  for group in "${groups[@]}"; do
+    group_file="${control_center}/ansible/inventory/inventory.d/${group}"
+    test -f "${group_file}" \
+      || fail "No group file found for group:  ${group}"
+    if grep -q "^${target}$" "${group_file}"; then
+      continue
+    fi
+    echo "${target}" >> "${group_file}" \
+      || fail "Failed to append host name to group file for group:  ${group}"
+    output "Joined group:  ${group}"
+  done
+}
+
+
+function set_host_vars() {
+  host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
+  if ! test -f "${host_vars_file}"; then
+    touch "${host_vars_file}" \
+      || fail "Failed to create host vars file."
+  fi
+  ip_address="$(allocate_ip_address)"
+  if ! grep -qE '^ip_address:[[:blank:]]+'"'${ip_address_host_segment_regex}" < "${host_vars_file}"; then
+    echo "ip_address:  '${ip_address}'" >> "${host_vars_file}" \
+      || fail "Failed to write IP address to host vars file."
+  fi
+}
+
+
+function allocate_ip_address() {
+  cd "${control_center}/ansible/inventory/inventory.d/host_vars/" \
+    || fail "Failed to change directory to host vars directory."
+
+  ls -d *.yml >/dev/null 2>&1 \
+    || fail "Failed to find existing host vars files."
+  
+  last_ip_address_host_segment="$(
+    gawk \
+      -F "[.']" \
+      '/^ip_address:[[:blank:]]+'"'${ip_address_host_segment_regex}"'/ {print $5}' \
+      *.yml \
+  )"
+
+  grep -qE '^[0-9]+$' <<< "${last_ip_address_host_segment}" \
+    || fail "Invalid last known IP address host segment:  ${last_ip_address_host_segment}"
+
+  test "${last_ip_address_host_segment}" -ge "${ip_address_host_segment_min}" \
+    || fail "Last known IP address is below spec."
+
+  ip_address_host_segment="$(( last_ip_address_host_segment + 1 ))" \
+    || fail "Failed to generate IP address host segment."
+
+  test"${ip_address_host_segment}" -le "${ip_address_host_segment_max}" \
+    || fail "IP address host segment is above spec."
+
+  echo "${ip_address_network_segment}.${ip_address_host_segment}"
+}
+
+
+function output() {
+  printf "${script_name}%s\\n" "${1}"
+}
+
+
+function fail() {
+  printf 'ERROR:  %s\n' "${1}" >&2
+  exit "${2:-1}"
+}
+
+
+pass_user="${USER}"
+script_name="${0##*/}"
+control_center="${0%/*}/.."
+ip_address_network_segment='192.168.11'
+ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
+ip_address_host_segment_min=50
+ip_address_host_segment_max=99
+
+if test 'set' = "${1:+set}"; then
+  target="${1}"
+else
+  target="$(read -p "Target host name:  ")"
+fi
+if ! grep -q '^[a-z-]+$' <<< "${target}"; then
+  fail "Invalid target:  '${target}'"
+fi
+
+
+groups=(
+  'ansible_target'
+  'monitored'
+  'dhcp-clients'
+  'dns_client'
+  'internal-dns-targets'
+  'syslog_client'
+  'automatic_updates'
+  'user_friendly'
+  'server'
+  'host_list'
+  'sshd'
+)
+
+time main
