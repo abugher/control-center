@@ -74,11 +74,20 @@ function set_host_vars() {
     touch "${host_vars_file}" \
       || fail "Failed to create host vars file."
   fi
-  ip_address="$(allocate_ip_address)"
-  if ! grep -qE '^ip_address:[[:blank:]]+'"'${ip_address_host_segment_regex}" < "${host_vars_file}"; then
+  if ! grep -qE '^ip_address:[[:blank:]]+'"'${ip_address_network_segment_regex}"'\.' "${host_vars_file}"; then
+    ip_address="$(allocate_ip_address)"
     echo "ip_address:  '${ip_address}'" >> "${host_vars_file}" \
       || fail "Failed to write IP address to host vars file."
   fi
+  if ! grep -qE '^ssh_unique_port:' "${host_vars_file}"; then
+    unique_ssh_port="$(allocate_unique_ssh_port)"
+    echo "ssh_unique_port:  '${ssh_unique_port}'" >> "${host_vars_file}" \\
+      || fail "Failed to write SSH unique port to host vars file."
+  fi
+  # Factor out known_host.  Template it from the host public key instead.
+  # Otherwise, copy it, here.
+
+  # Automatically generate reboot and update times?
 }
 
 
@@ -91,24 +100,58 @@ function allocate_ip_address() {
   
   last_ip_address_host_segment="$(
     gawk \
-      -F "[.']" \
-      '/^ip_address:[[:blank:]]+'"'${ip_address_host_segment_regex}"'/ {print $5}' \
+      -F "[.]" \
+      '/^ip_address:[[:blank:]]+'"'{0,1}${ip_address_network_segment_regex}"'\./ {print $4}' \
       *.yml \
+      | sed "s/'//" \
+      | sort \
+      | tail -n 1
   )"
 
   grep -qE '^[0-9]+$' <<< "${last_ip_address_host_segment}" \
-    || fail "Invalid last known IP address host segment:  ${last_ip_address_host_segment}"
+    || fail "Invalid highest known IP address host segment:  ${last_ip_address_host_segment}"
 
   test "${last_ip_address_host_segment}" -ge "${ip_address_host_segment_min}" \
-    || fail "Last known IP address is below spec."
+    || fail "Highest known IP address host segment is below spec."
 
   ip_address_host_segment="$(( last_ip_address_host_segment + 1 ))" \
     || fail "Failed to generate IP address host segment."
 
-  test"${ip_address_host_segment}" -le "${ip_address_host_segment_max}" \
+  test "${ip_address_host_segment}" -le "${ip_address_host_segment_max}" \
     || fail "IP address host segment is above spec."
 
   echo "${ip_address_network_segment}.${ip_address_host_segment}"
+}
+
+
+function allocate_unique_ssh_port() {
+  cd "${control_center}/ansible/inventory/inventory.d/host_vars/" \
+    || fail "Failed to change directory to host vars directory."
+
+  ls -d *.yml >/dev/null 2>&1 \
+    || fail "Failed to find existing host vars files."
+
+  last_ssh_unique_port="$(
+    gawk \
+      '/^ssh_unique_port:/ {print $2}' \
+      *.yml \
+      | sed "s/'//g" \
+      | sort \
+      | tail -n 1
+  )"
+
+  grep -qE '^[0-9]+$' <<< "${last_ssh_unique_port}" \
+    fail "Invalid highest known SSH unique port:  ${last_ssh_unique_port}"
+
+  test "${last_ssh_unique_port}" -ge "${ssh_unique_port_min}" \
+    || fail "Highest known SSH unique port is below spec."
+
+  ssh_unique_port="$(( last_ssh_unique_port + 1 ))"
+
+  test "${ssh_unique_port}" -le "${ssh_unique_port_max}" \
+    || fail "SSH unique port is above spec."
+
+  echo "${ssh_unique_port}"
 }
 
 
