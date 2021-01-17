@@ -8,6 +8,11 @@ function main() {
   generate_ssh_host_keys
   set_groups
   set_host_vars
+  # Deploy image, including generated material such as IP address, then boot.
+  wait_for_host
+  set_mac
+  deploy_roles
+  admonish
 }
 
 
@@ -33,16 +38,12 @@ function generate_ssl_material() {
 
 
 function generate_ssh_host_keys() {
-  private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
-  public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-  public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-
-  if test -f "${private_key}" && test -f "${public_key}"; then
+  if test -f "${ssh_private_key}" && test -f "${ssh_public_key}"; then
     output "SSH keys already exist."
     return 0
   fi
 
-  for key in "${private_key}" "${public_key}" "${public_key_unmoved}"; do
+  for key in "${ssh_private_key}" "${ssh_public_key}" "${ssh_public_key_unmoved}"; do
     if test -e "${key}"; then
       rm -f "${key}" \
         || fail "Failed to remove stale SSH key:  ${key}"
@@ -56,7 +57,7 @@ function generate_ssh_host_keys() {
     || fail "Failed to create directory for SSH private key."
   cd "${target}/files/ssh_keys" \
     || fail "Failed to change directory to directory for SSH private key."
-  ssh-keygen -t rsa -b 4096 -C '' -f "${private_key}" < /dev/null \
+  ssh-keygen -t rsa -b 4096 -C '' -f "${ssh_private_key}" < /dev/null \
     || fail "Failed to generate SSH keys."
 
   cd "${control_center}/ansible/inventory/hosts" \
@@ -65,7 +66,7 @@ function generate_ssh_host_keys() {
     || fail "Failed to create directory for SSH public key."
   cd "${target}/files/ssh_keys" \
     || fail "Failed to change directory to directory for SSH public key."
-  mv "${public_key_unmoved}" "${public_key}" \
+  mv "${ssh_public_key_unmoved}" "${ssh_public_key}" \
     || fail "Failed to move public key."
 
   output "Generated SSH host keys."
@@ -84,11 +85,11 @@ function set_groups() {
       || fail "Failed to append host name to group file for group:  ${group}"
     output "Joined group:  ${group}"
   done
+  output "Group membership is set."
 }
 
 
 function set_host_vars() {
-  host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
   if ! test -f "${host_vars_file}"; then
     touch "${host_vars_file}" \
       || fail "Failed to create host vars file."
@@ -103,10 +104,57 @@ function set_host_vars() {
     echo "ssh_unique_port:  '${ssh_unique_port}'" >> "${host_vars_file}" \
       || fail "Failed to write SSH unique port to host vars file."
   fi
-  # Factor out known_host.  Template it from the host public key instead.
-  # Otherwise, copy it, here.
-
-  # Automatically generate reboot and update times?
+  if ! grep -qE '^known_host:' "${host_vars_file}"; then
+    known_host="$(cat "${ssh_public_key}")"
+    echo "known_host: '${known_host}'" >> "${host_vars_file}" \
+      || fail "Failed to write known host line to host vars file."
+  fi
+  if ! grep -qE '^reboot_hour:' "${host_vars_file}"; then
+    reboot_hours=( 
+      $(
+        awk '/reboot_hour/ {print $2}' \
+          "${control_center}"/ansible/inventory/inventory.d/host_vars/*.yml \
+          | sed "s/'//g" \
+          | sort
+      ) 
+    )
+    unset reboot_hour
+    for hour in {00..23}; do
+      if ! grep -q "${hour}" <<< "${reboot_hours[@]}"; then
+        reboot_hour="${hour}"
+        break
+      fi
+    done
+    if ! test 'set' = "${reboot_hour:+set}"; then
+      fail "Failed to allocate a reboot hour."
+    fi
+    echo "reboot_hour: '${reboot_hour}'" >> "${host_vars_file}" \
+      || fail "Failed to write reboot hour to host vars file."
+  fi
+  if ! grep -qE '^reboot_hour:' "${host_vars_file}"; then
+    reboot_minute='00'
+    echo "reboot_minute: '${reboot_minute}'" >> "${host_vars_file}" \
+      || fail "Failed to write reboot minute to host vars file."
+  fi
+  if ! grep -qE '^update_hour:' "${host_vars_file}"; then
+    update_hour="$(
+      printf '%02d' "$((
+        reboot_hour + 2
+      ))"
+    )"
+    echo "update_hour: '${update_hour}'" >> "${host_vars_file}" \
+      || fail "Failed to write update hour to host vars file."
+  fi
+  if ! grep -qE '^update_minute:' "${host_vars_file}"; then
+    update_minute='00'
+    echo "update_minute: '${update_minute}'" >> "${host_vars_file}" \
+      || fail "Failed to write update minute to host vars file."
+  fi
+  if ! grep -qE '^notify:' "${host_vars_file}"; then
+    echo "notify: 'yes'" >> "${host_vars_file}" \
+      || fail "Failed to write notify line to host vars file."
+  fi
+  output "Host vars are set (except for MAC address)."
 }
 
 
@@ -174,6 +222,74 @@ function allocate_unique_ssh_port() {
 }
 
 
+function wait_for_host() {
+  output "Unique host material (IP address, root password, etc) has been generated."
+  output "Deploy an OS image and boot the host."
+  output "Waiting for host:  ${target}"
+  while ! ping -qc 1 "${target}" > /dev/null 2>&1; do
+    echo -n '.'
+    sleep 10
+  done
+  echo
+  output "Host is up:  ${target}"
+}
+
+
+function gather_mac_address() {
+  mac_address="$(
+    ssh "root@${target}" ip addr \
+      | grep -v LOOPBACK \
+      | grep -A 1 UP \
+      | tail -n 1 \
+      | awk '{print $2}'
+  )" \
+    || fail "Failed to gather MAC address."
+
+  if ! grep -qE '^[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$' <<< "${mac_address}"; then
+    fail "Invalid MAC address:  '${mac_address}'"
+  fi
+
+  echo "${mac_address}"
+}
+
+
+function set_mac() {
+  if ! grep -qE '^mac_address:' "${host_vars_file}"; then
+    mac_address="$(gather_mac_address)"
+    echo "mac_address:  '${mac_address}'" >> "${host_vars_file}" \
+      || fail "Failed to write MAC address to host vars file."
+  fi
+  output "MAC address is set in host vars file."
+}
+
+
+function deploy_roles() {
+  cd "${control_center}/ansible" \
+    || fail "Failed to enter ansible directory."
+  ./bin/deploy_role_to_localhost ansible_master \
+    || fail "Failed to deploy role ansible_master to localhost."
+  if ! ssh "ansible@${target}" whoami >/dev/null 2>&1; then
+    ./bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
+      || fail "Failed to deploy role ansible_target to:  ${target}"
+  fi
+  ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
+    || fail "Failed to deploy role sshd to:  ${target}"
+  ./bin/deploy_host "${target}" \
+    || fail "Failed to deploy all assigned roles to:  ${target}"
+  for role in dns_internal dhcp-server nagios ansible_master; do
+    ./bin/deploy_role "${role}" \
+      || fail "Failed to deploy role:  ${role}"
+  done
+  output "Deployed ansible roles."
+}
+
+
+function admonish() {
+  output "Deployment is complete.  Don't forget:"
+  output "  - Forward the unique SSH port on the NAT gateway."
+}
+
+
 function output() {
   printf "${script_name}: %s\\n" "${1}"
 }
@@ -185,15 +301,6 @@ function fail() {
 }
 
 
-pass_user="${USER}"
-script_name="${0##*/}"
-control_center="$(readlink -f "${0%/*}/..")" \
-  || fail "Failed to get absolute path of control center."
-ip_address_network_segment='192.168.11'
-ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
-ip_address_host_segment_min=50
-ip_address_host_segment_max=99
-
 if test 'set' = "${1:+set}"; then
   target="${1}"
 else
@@ -202,6 +309,19 @@ fi
 if ! grep -qE '^[a-z-]+$' <<< "${target}"; then
   fail "Invalid target:  '${target}'"
 fi
+
+pass_user="${USER}"
+script_name="${0##*/}"
+control_center="$(readlink -f "${0%/*}/..")" \
+  || fail "Failed to get absolute path of control center."
+host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
+ssh_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
+ssh_public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ip_address_network_segment='192.168.11'
+ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
+ip_address_host_segment_min=50
+ip_address_host_segment_max=99
 
 
 groups=(
