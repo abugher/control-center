@@ -6,6 +6,7 @@ function main() {
   generate_root_password
   generate_ssl_material
   generate_ssh_host_keys
+  generate_ssh_root_keys
   set_groups
   set_host_vars
   # Deploy image, including generated material such as IP address, then boot.
@@ -38,12 +39,12 @@ function generate_ssl_material() {
 
 
 function generate_ssh_host_keys() {
-  if test -f "${ssh_private_key}" && test -f "${ssh_public_key}"; then
-    output "SSH keys already exist."
+  if test -f "${ssh_host_private_key}" && test -f "${ssh_host_public_key}"; then
+    output "SSH host keys already exist."
     return 0
   fi
 
-  for key in "${ssh_private_key}" "${ssh_public_key}" "${ssh_public_key_unmoved}"; do
+  for key in "${ssh_host_private_key}" "${ssh_host_public_key}" "${ssh_host_public_key_unmoved}"; do
     if test -e "${key}"; then
       rm -f "${key}" \
         || fail "Failed to remove stale SSH key:  ${key}"
@@ -54,22 +55,71 @@ function generate_ssh_host_keys() {
   cd "${control_center}/sensitive_ansible/inventory/hosts" \
     || fail "Failed to change directory to the sensitive inventory of hosts directory."
   mkdir -p "${target}/files/ssh_keys" \
-    || fail "Failed to create directory for SSH private key."
+    || fail "Failed to create directory for SSH private host key."
   cd "${target}/files/ssh_keys" \
-    || fail "Failed to change directory to directory for SSH private key."
-  ssh-keygen -t rsa -b 4096 -C '' -f "${ssh_private_key}" < /dev/null \
-    || fail "Failed to generate SSH keys."
+    || fail "Failed to change directory to directory for SSH private host key."
+  ssh-keygen -t rsa -b 4096 -C '' -f "${ssh_host_private_key}" < /dev/null \
+    || fail "Failed to generate SSH host keys."
 
   cd "${control_center}/ansible/inventory/hosts" \
     || fail "Failed to change directory to the inventory of hosts directory."
   mkdir -p "${target}/files/ssh_keys" \
-    || fail "Failed to create directory for SSH public key."
+    || fail "Failed to create directory for SSH public host key."
   cd "${target}/files/ssh_keys" \
-    || fail "Failed to change directory to directory for SSH public key."
-  mv "${ssh_public_key_unmoved}" "${ssh_public_key}" \
-    || fail "Failed to move public key."
+    || fail "Failed to change directory to directory for SSH public host key."
+  mv "${ssh_host_public_key_unmoved}" "${ssh_host_public_key}" \
+    || fail "Failed to move public host key."
 
   output "Generated SSH host keys."
+
+  if test -f "${ssh_root_private_key}" && test -f "${ssh_root_public_key}"; then
+    output "SSH root keys already exist."
+    return 0
+  fi
+
+  for key in "${ssh_root_private_key}" "${ssh_root_public_key}" "${ssh_root_public_key_unmoved}"; do
+    if test -e "${key}"; then
+      rm -f "${key}" \
+        || fail "Failed to remove stale SSH key:  ${key}"
+      output "Removed stale SSH key:  ${key}"
+    fi
+  done
+}
+
+
+function generate_ssh_root_keys() {
+  if test -f "${ssh_root_private_key}" && test -f "${ssh_root_public_key}"; then
+    output "SSH root keys already exist."
+    return 0
+  fi
+
+  for key in "${ssh_root_private_key}" "${ssh_root_public_key}" "${ssh_root_public_key_unmoved}"; do
+    if test -e "${key}"; then
+      rm -f "${key}" \
+        || fail "Failed to remove stale SSH key:  ${key}"
+      output "Removed stale SSH key:  ${key}"
+    fi
+  done
+
+  cd "${control_center}/sensitive_ansible/inventory/hosts" \
+    || fail "Failed to change directory to the sensitive inventory of hosts directory."
+  mkdir -p "${target}/users/root/files/ssh_keys" \
+    || fail "Failed to create directory for SSH private root key."
+  cd "${target}/users/root/files/ssh_keys" \
+    || fail "Failed to change directory to directory for SSH private root key."
+  ssh-keygen -t rsa -b 4096 -C "root@${target}.${domain}" -f "${ssh_root_private_key}" < /dev/null \
+    || fail "Failed to generate SSH root keys."
+
+  cd "${control_center}/ansible/inventory/hosts" \
+    || fail "Failed to change directory to the inventory of hosts directory."
+  mkdir -p "${target}/users/root/files/ssh_keys" \
+    || fail "Failed to create directory for SSH public root key."
+  cd "${target}/users/root/files/ssh_keys" \
+    || fail "Failed to change directory to directory for SSH public root key."
+  mv "${ssh_root_public_key_unmoved}" "${ssh_root_public_key}" \
+    || fail "Failed to move public root key."
+
+  output "Generated SSH root keys."
 }
 
 
@@ -105,7 +155,7 @@ function set_host_vars() {
       || fail "Failed to write SSH unique port to host vars file."
   fi
   if ! grep -qE '^known_host:' "${host_vars_file}"; then
-    known_host="$(cat "${ssh_public_key}")"
+    known_host="$(cat "${ssh_host_public_key}")"
     echo "known_host: '${known_host}'" >> "${host_vars_file}" \
       || fail "Failed to write known host line to host vars file."
   fi
@@ -266,7 +316,7 @@ function set_mac() {
 function deploy_roles() {
   cd "${control_center}/ansible" \
     || fail "Failed to enter ansible directory."
-  ./bin/deploy_role_to_localhost ansible_master \
+  ./bin/deploy_role_to_localhost ansible_master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
     || fail "Failed to deploy role ansible_master to localhost."
   if ! ssh "ansible@${target}" whoami >/dev/null 2>&1; then
     ./bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
@@ -315,9 +365,13 @@ script_name="${0##*/}"
 control_center="$(readlink -f "${0%/*}/..")" \
   || fail "Failed to get absolute path of control center."
 host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
-ssh_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
-ssh_public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-ssh_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_host_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
+ssh_host_public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_host_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_root_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa"
+ssh_root_public_key="${control_center}/ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
+ssh_root_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
+domain='neuronpointer.net'
 ip_address_network_segment='192.168.11'
 ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
 ip_address_host_segment_min=50
