@@ -382,7 +382,6 @@ groups=(
   'ansible_target'
   'monitored'
   'dhcp-clients'
-  'dns_client'
   'internal-dns-targets'
   'syslog_client'
   'automatic_updates'
