@@ -31,7 +31,7 @@ function generate_root_password() {
 function generate_ssl_material() {
   cd "${control_center}/certificate_authority" \
     || fail "Failed to change directory to certificate authority directory."
-  ./generate "${target}" \
+  ./bin/generate "${target}" \
     || fail "Failed to generate SSL material."
 
   output "Generated SSL material."
