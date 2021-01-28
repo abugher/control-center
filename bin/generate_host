@@ -275,8 +275,15 @@ function allocate_unique_ssh_port() {
 function wait_for_host() {
   output "Unique host material (IP address, root password, etc) has been generated."
   output "Deploy an OS image and boot the host."
-  output "Waiting for host:  ${target}"
+  output "Waiting for host to ping:  ${target}"
   while ! ping -qc 1 "${target}" > /dev/null 2>&1; do
+    echo -n '.'
+    sleep 10
+  done
+  echo
+  output "Waiting for host to respond to SSH:  ${target}"
+  # This will go off the rails if the SSH service is up but misconfigured.
+  while ! ssh -p 22 "root@${target}" whoami > /dev/null 2>&1; do
     echo -n '.'
     sleep 10
   done
@@ -385,7 +392,6 @@ groups=(
   'internal-dns-targets'
   'syslog_client'
   'automatic_updates'
-  'user_friendly'
   'server'
   'host_list'
   'sshd'
