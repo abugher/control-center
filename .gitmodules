@@ -1,15 +1,15 @@
 [submodule "certificate_authority"]
 	path = certificate_authority
-	url = git@github.com:abugher/certificate_authority.git
+	url = https://github.com/abugher/certificate_authority.git
 [submodule "os_deployment"]
 	path = os_deployment
-	url = git@github.com:abugher/os_deployment.git
+	url = https://github.com/abugher/os_deployment.git
 [submodule "ansible"]
 	path = ansible
-	url = git@github.com:abugher/ansible_environment.git
+	url = https://github.com/abugher/ansible_environment.git
 [submodule "git-automation"]
 	path = git-automation
-	url = git@github.com:abugher/git-automation.git
+	url = https://github.com/abugher/git-automation.git
 [submodule "dicelessware"]
 	path = dicelessware
-	url = git@github.com:abugher/dicelessware
+	url = https://github.com/abugher/dicelessware
