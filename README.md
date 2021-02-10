@@ -8,11 +8,11 @@ subprojects:
 
 To get the whole collection, do this:
 
-    git clone --recurse-submodules git@github.com:abugher/control_center.git
+    git clone --recurse-submodules https://github.com/abugher/control_center.git
 
-**Bug:** This only works for contributors to the repo, because submodules are
-all specified by the SSH path, and only contributors can access a github repo
-by SSH, even if the repo is public.
+If you have write access and wish to push changes:
+
+    ./bin/fix_remotes
 
 There are also several untracked subdirectories, named starting with
 "sensitive\_", as reflected by *.gitignore* .  Some code may not work unless
