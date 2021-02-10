@@ -1,0 +1,20 @@
+#!/bin/bash
+
+find . -type d \
+  | while read dir; do
+    cd "${dir}"
+    if test -e .git; then
+      repo_name="$(git remote show origin | awk '/  Push/ {print $3}')"
+      repo_name="${repo_name##*/}"
+      repo_name="${repo_name%.git}"
+      echo "Fixing:  ${PWD} (${repo_name})"
+      git remote set-url origin "https://github.com/abugher/${repo_name}.git"
+      git remote set-url --push origin "git@github.com:abugher/${repo_name}.git"
+      git checkout master > /dev/null 2>&1
+      if ! git pull > /dev/null 2>&1; then
+        echo "Failed."
+        exit 1
+      fi
+    fi
+    cd "${OLDPWD}"
+  done
