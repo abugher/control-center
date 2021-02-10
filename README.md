@@ -36,7 +36,7 @@ some lines to ./bin/fix\_remotes to create the repo in your namespace before
 attempting a pull.  github provides a tool called "hub" which may help with
 that.  ( https://github.com/github/hub )  gitlab makes that part easier,
 allowing you to create a new repo by pushing to it.  (
-https://docs.gitlab.com/ee/user/project/working\_with\_projects.html )
+https://docs.gitlab.com/ee/user/project/working_with_projects.html )
 
 # Usage
 
