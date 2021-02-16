@@ -332,6 +332,8 @@ function deploy_roles() {
     ./bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
       || fail "Failed to deploy role ansible_target to:  ${target}"
   fi
+  ./bin/deploy_role_to_hosts automatic_updates "${target}" -e ansible_port=22 \
+    || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_host "${target}" \
