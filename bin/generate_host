@@ -283,7 +283,10 @@ function wait_for_host() {
   echo
   output "Waiting for host to respond to SSH:  ${target}"
   # This will go off the rails if the SSH service is up but misconfigured.
-  while ! ssh -p 22 "root@${target}" whoami > /dev/null 2>&1; do
+  while ! ssh -p 22 -o PasswordAuthentication=no "root@${target}" whoami > /dev/null 2>&1; do
+    if ssh -o PasswordAuthentication=no "ansible@${target}" whoami > /dev/null 2>&1; then
+      break
+    fi
     echo -n '.'
     sleep 10
   done
