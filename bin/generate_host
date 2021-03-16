@@ -150,7 +150,7 @@ function set_host_vars() {
       || fail "Failed to write IP address to host vars file."
   fi
   if ! grep -qE '^ssh_unique_port:' "${host_vars_file}"; then
-    unique_ssh_port="$(allocate_unique_ssh_port)"
+    ssh_unique_port="$(allocate_ssh_unique_port)"
     echo "ssh_unique_port:  '${ssh_unique_port}'" >> "${host_vars_file}" \
       || fail "Failed to write SSH unique port to host vars file."
   fi
@@ -241,7 +241,7 @@ function allocate_ip_address() {
 }
 
 
-function allocate_unique_ssh_port() {
+function allocate_ssh_unique_port() {
   cd "${control_center}/ansible/inventory/inventory.d/host_vars/" \
     || fail "Failed to change directory to host vars directory."
 
@@ -258,7 +258,7 @@ function allocate_unique_ssh_port() {
   )"
 
   grep -qE '^[0-9]+$' <<< "${last_ssh_unique_port}" \
-    fail "Invalid highest known SSH unique port:  ${last_ssh_unique_port}"
+    || fail "Invalid highest known SSH unique port:  ${last_ssh_unique_port}"
 
   test "${last_ssh_unique_port}" -ge "${ssh_unique_port_min}" \
     || fail "Highest known SSH unique port is below spec."
@@ -388,6 +388,8 @@ ip_address_network_segment='192.168.11'
 ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
 ip_address_host_segment_min=50
 ip_address_host_segment_max=99
+ssh_unique_port_min=1025
+ssh_unique_port_max=65535
 
 
 groups=(
