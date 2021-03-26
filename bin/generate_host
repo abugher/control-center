@@ -336,7 +336,7 @@ function deploy_roles() {
     || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
-  ./bin/deploy_host "${target}" \
+  ./bin/deploy_hosts "${target}" \
     || fail "Failed to deploy all assigned roles to:  ${target}"
   for role in dns_internal dhcp-server nagios ansible_master; do
     ./bin/deploy_role "${role}" \
