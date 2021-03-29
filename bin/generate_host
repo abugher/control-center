@@ -18,9 +18,9 @@ function main() {
 
 
 function generate_root_password() {
-  if ! pass show "${pass_user}/${target}/root" >/dev/null; then
+  if ! pass show "${pass_user}/${target}/root" >/dev/null 2>&1; then
     output "Generating root password."
-    dicelessware/dw 5 | pass add -m \
+    dicelessware/dw 5 | pass add -m "${pass_user}/${target}/root" \
       || fail "Failed to generate root password."
   fi
 
