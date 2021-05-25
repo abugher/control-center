@@ -9,7 +9,15 @@ function main() {
   generate_ssh_root_keys
   set_groups
   set_host_vars
+  set_dns_record
   # Deploy image, including generated material such as IP address, then boot.
+  wait_for_host
+  # Initial SSH host key may be different from recorded, but must be known.
+  # Set up ansible user before deploying sshd role, which disables root login.
+  deploy_ansible_target
+  install_ssh_host_keys
+  recognize_ssh_host_keys
+  # Remove any old SSH host keys from known hosts.
   wait_for_host
   set_mac
   deploy_roles
@@ -323,22 +331,57 @@ function set_mac() {
 }
 
 
+function set_dns_record() {
+  output "Setting DNS record."
+  if host "${target}"."${domain}" > /dev/null; then
+    return 0
+  fi
+  "${control_center}"/ansible/bin/deploy_role dns_internal \
+    || fail "Failed to deploy role:  dns_internal"
+}
+
+
+function deploy_ansible_target() {
+  if ! ssh -o passwordauthentication=no "ansible@${target}" whoami >/dev/null 2>&1; then
+    "${control_center}"/ansible/bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
+      || fail "Failed to deploy role ansible_target to:  ${target}"
+  fi
+}
+
+
+function install_ssh_host_keys() {
+  output "Installing SSH host keys."
+  "${control_center}"/ansible/bin/deploy_role_to_hosts sshd "${target}" \
+    || fail "Failed to deploy role to target:  sshd"
+}
+
+
+function recognize_ssh_host_keys() {
+  output "Recognizing SSH host keys."
+
+  # This hangs.  I don't know why.
+  #"${control_center}"/ansible/bin/deploy_role_to_localhost ansible_master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
+  #  || fail "Failed to deploy role ansible_master to localhost."
+
+  # It doesn't seem to hang without ansible_become_pass specified.  Do this
+  # interactively, until I can debug the section above.
+  output "Authenticate for sudo."
+  sudo -v
+  "${control_center}"/ansible/bin/deploy_role_to_localhost ansible_master \
+    || fail "Failed to deploy role ansible_master to localhost."
+}
+
+
 function deploy_roles() {
   cd "${control_center}/ansible" \
     || fail "Failed to enter ansible directory."
-  ./bin/deploy_role_to_localhost ansible_master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
-    || fail "Failed to deploy role ansible_master to localhost."
-  if ! ssh "ansible@${target}" whoami >/dev/null 2>&1; then
-    ./bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
-      || fail "Failed to deploy role ansible_target to:  ${target}"
-  fi
   ./bin/deploy_role_to_hosts automatic_updates "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_hosts "${target}" \
     || fail "Failed to deploy all assigned roles to:  ${target}"
-  for role in dns_internal dhcp-server nagios ansible_master; do
+  for role in dhcp-server nagios ansible_master; do
     ./bin/deploy_role "${role}" \
       || fail "Failed to deploy role:  ${role}"
   done
