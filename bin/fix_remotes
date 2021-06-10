@@ -2,8 +2,9 @@
 
 find . -type d \
   | while read dir; do
+    echo "Checking:  ${dir}"
     cd "${dir}"
-    if test -e .git; then
+    if test -e .git && git remote show origin | grep -q 'github\.com'; then
       repo_name="$(git remote show origin | awk '/  Push/ {print $3}')"
       repo_name="${repo_name##*/}"
       repo_name="${repo_name%.git}"
