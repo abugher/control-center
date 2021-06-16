@@ -351,7 +351,8 @@ function deploy_ansible_target() {
 
 function install_ssh_host_keys() {
   output "Installing SSH host keys."
-  "${control_center}"/ansible/bin/deploy_role_to_hosts sshd "${target}" \
+  # Redundant?
+  "${control_center}"/ansible/bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role to target:  sshd"
 }
 
@@ -377,6 +378,7 @@ function deploy_roles() {
     || fail "Failed to enter ansible directory."
   ./bin/deploy_role_to_hosts automatic_updates "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
+  # Redundant?
   ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
   ./bin/deploy_hosts "${target}" \
