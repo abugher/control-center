@@ -1,6 +1,7 @@
 #!/bin/bash
 # Depends on:
 # - gawk
+# - dnsutils ("host" command)
 
 function main() {
   generate_root_password
