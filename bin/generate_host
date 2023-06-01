@@ -38,7 +38,7 @@ function generate_root_password() {
 
 
 function generate_ssl_material() {
-  cd "${control_center}/certificate_authority" \
+  cd "${control_center}/certificate-authority" \
     || fail "Failed to change directory to certificate authority directory."
   ./bin/generate "${target}" \
     || fail "Failed to generate SSL material."
@@ -61,7 +61,7 @@ function generate_ssh_host_keys() {
     fi
   done
 
-  cd "${control_center}/sensitive_ansible/inventory/hosts" \
+  cd "${control_center}/sensitive-ansible/inventory/hosts" \
     || fail "Failed to change directory to the sensitive inventory of hosts directory."
   mkdir -p "${target}/files/ssh_keys" \
     || fail "Failed to create directory for SSH private host key."
@@ -110,7 +110,7 @@ function generate_ssh_root_keys() {
     fi
   done
 
-  cd "${control_center}/sensitive_ansible/inventory/hosts" \
+  cd "${control_center}/sensitive-ansible/inventory/hosts" \
     || fail "Failed to change directory to the sensitive inventory of hosts directory."
   mkdir -p "${target}/users/root/files/ssh_keys" \
     || fail "Failed to create directory for SSH private root key."
@@ -423,12 +423,12 @@ script_name="${0##*/}"
 control_center="$(readlink -f "${0%/*}/..")" \
   || fail "Failed to get absolute path of control center."
 host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
-ssh_host_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
+ssh_host_private_key="${control_center}/sensitive-ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
 ssh_host_public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-ssh_host_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-ssh_root_private_key="${control_center}/sensitive_ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa"
+ssh_host_public_key_unmoved="${control_center}/sensitive-ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_root_private_key="${control_center}/sensitive-ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa"
 ssh_root_public_key="${control_center}/ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
-ssh_root_public_key_unmoved="${control_center}/sensitive_ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
+ssh_root_public_key_unmoved="${control_center}/sensitive-ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
 domain='neuronpointer.net'
 ip_address_network_segment='192.168.11'
 ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"
