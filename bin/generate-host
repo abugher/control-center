@@ -337,15 +337,15 @@ function set_dns_record() {
   if host "${target}"."${domain}" > /dev/null; then
     return 0
   fi
-  "${control_center}"/ansible/bin/deploy_role dns_internal \
-    || fail "Failed to deploy role:  dns_internal"
+  "${control_center}"/ansible/bin/deploy-role dns-internal \
+    || fail "Failed to deploy role:  dns-internal"
 }
 
 
 function deploy_ansible_target() {
   if ! ssh -o passwordauthentication=no "ansible@${target}" whoami >/dev/null 2>&1; then
-    "${control_center}"/ansible/bin/deploy_role_as_user_to_hosts ansible_target root "${target}" -e ansible_port=22 \
-      || fail "Failed to deploy role ansible_target to:  ${target}"
+    "${control_center}"/ansible/bin/deploy-role-as-user-to-hosts ansible-target root "${target}" -e ansible_port=22 \
+      || fail "Failed to deploy role ansible-target to:  ${target}"
   fi
 }
 
@@ -353,7 +353,7 @@ function deploy_ansible_target() {
 function install_ssh_host_keys() {
   output "Installing SSH host keys."
   # Redundant?
-  "${control_center}"/ansible/bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
+  "${control_center}"/ansible/bin/deploy-role-to-hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role to target:  sshd"
 }
 
@@ -362,30 +362,30 @@ function recognize_ssh_host_keys() {
   output "Recognizing SSH host keys."
 
   # This hangs.  I don't know why.
-  #"${control_center}"/ansible/bin/deploy_role_to_localhost ansible_master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
-  #  || fail "Failed to deploy role ansible_master to localhost."
+  #"${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
+  #  || fail "Failed to deploy role ansible-master to localhost."
 
   # It doesn't seem to hang without ansible_become_pass specified.  Do this
   # interactively, until I can debug the section above.
   output "Authenticate for sudo."
   sudo -v
-  "${control_center}"/ansible/bin/deploy_role_to_localhost ansible_master \
-    || fail "Failed to deploy role ansible_master to localhost."
+  "${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master \
+    || fail "Failed to deploy role ansible-master to localhost."
 }
 
 
 function deploy_roles() {
   cd "${control_center}/ansible" \
     || fail "Failed to enter ansible directory."
-  ./bin/deploy_role_to_hosts automatic_updates "${target}" -e ansible_port=22 \
+  ./bin/deploy-role-to-hosts automatic-updates "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
   # Redundant?
-  ./bin/deploy_role_to_hosts sshd "${target}" -e ansible_port=22 \
+  ./bin/deploy-role-to-hosts sshd "${target}" -e ansible_port=22 \
     || fail "Failed to deploy role sshd to:  ${target}"
-  ./bin/deploy_hosts "${target}" \
+  ./bin/deploy-hosts "${target}" \
     || fail "Failed to deploy all assigned roles to:  ${target}"
-  for role in dhcp-server nagios ansible_master; do
-    ./bin/deploy_role "${role}" \
+  for role in dhcp-server nagios ansible-master; do
+    ./bin/deploy-role "${role}" \
       || fail "Failed to deploy role:  ${role}"
   done
   output "Deployed ansible roles."
@@ -439,14 +439,14 @@ ssh_unique_port_max=65535
 
 
 groups=(
-  'ansible_target'
+  'ansible-target'
   'monitored'
   'dhcp-clients'
   'internal-dns-targets'
-  'syslog_client'
-  'automatic_updates'
+  'syslog-client'
+  'automatic-updates'
   'server'
-  'host_list'
+  'host-list'
   'sshd'
 )
 

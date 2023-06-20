@@ -23,7 +23,7 @@ well.
 If you have write access and wish to push changes, fix the remote push URL's
 with this:
 
-    ./bin/fix_remotes
+    ./bin/fix-remotes
 
 To sync changes up and down, try this:
 
@@ -43,7 +43,7 @@ https://docs.gitlab.com/ee/user/project/working_with_projects.html )
 Most of the content is in the subprojects.  There is one high level script to
 generate configuration for and deploy a new host:
 
-    ./bin/generate_host <hostname>
+    ./bin/generate-host <hostname>
 
 This will do things like assign a unique IP address, generate host
 certificates, add the host to a few groups, and deploy all assigned roles to
