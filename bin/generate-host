@@ -11,13 +11,13 @@ function main() {
   set_groups
   set_host_vars
   set_dns_record
+  recognize_ssh_host_keys
   # Deploy image, including generated material such as IP address, then boot.
   wait_for_host
   # Initial SSH host key may be different from recorded, but must be known.
   # Set up ansible user before deploying sshd role, which disables root login.
   deploy_ansible_target
   install_ssh_host_keys
-  recognize_ssh_host_keys
   # Remove any old SSH host keys from known hosts.
   wait_for_host
   set_mac
@@ -360,16 +360,7 @@ function install_ssh_host_keys() {
 
 function recognize_ssh_host_keys() {
   output "Recognizing SSH host keys."
-
-  # This hangs.  I don't know why.
-  #"${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
-  #  || fail "Failed to deploy role ansible-master to localhost."
-
-  # It doesn't seem to hang without ansible_become_pass specified.  Do this
-  # interactively, until I can debug the section above.
-  output "Authenticate for sudo."
-  sudo -v
-  "${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master \
+  "${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
     || fail "Failed to deploy role ansible-master to localhost."
 }
 
