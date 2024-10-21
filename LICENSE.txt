@@ -1,0 +1,9 @@
+All contents of this repository are released under the terms of the CC0 1.0
+Universal license, the text of which can be viewed in plain text in the file
+CC0-1.0.txt or at this URL:
+
+  https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt
+  
+The Creative Commons site lists the following "Canonical URL":
+
+  https://creativecommons.org/publicdomain/zero/1.0/
