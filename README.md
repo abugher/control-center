@@ -3,10 +3,10 @@
 This repo is how I run operations on my home network.  It consists of several
 subprojects:
 
-* *ansible* - This is where most of the action happens.  Each role has a subproject.  (Sub-sub-project.)
-* *certificate-authority* - Tools for being a CA, operational state of my own CA, and signed certificates for my hosts.
-* *os-deployment* - Tools to apply operating system images to boot media.
-* *git-automation* - A tool to manage git operations.
+* `ansible` - This is where most of the action happens.  Each role has a subproject.  (Sub-sub-project.)
+* `certificate-authority` - Tools for being a CA, operational state of my own CA, and signed certificates for my hosts.
+* `os-deployment` - Tools to apply operating system images to boot media.
+* `git-automation` - A tool to manage git operations.
 
 
 # Collaboration
