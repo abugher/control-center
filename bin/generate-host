@@ -359,6 +359,8 @@ function install_ssh_host_keys() {
 
 
 function recognize_ssh_host_keys() {
+  output "Authenticate for sudo to recognize host keys."
+  sudo -v
   output "Recognizing SSH host keys."
   "${control_center}"/ansible/bin/deploy-role-to-localhost ansible-master -e ansible_become_pass="$(pass show "${USER}/${HOSTNAME}/${USER}")" \
     || fail "Failed to deploy role ansible-master to localhost."
