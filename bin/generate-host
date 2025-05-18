@@ -11,6 +11,7 @@ function main() {
   set_groups
   set_host_vars
   set_dns_record
+  set_dhcp_reservation
   recognize_ssh_host_keys
   # Deploy image, including generated material such as IP address, then boot.
   wait_for_host
@@ -341,6 +342,13 @@ function set_dns_record() {
     || fail "Failed to deploy role:  dns-internal"
 }
 
+
+function set_dhcp_reservation() {
+  output "Setting DHCP reservation."
+  # It would be neat to check whether the reservation already exists.
+  "${control_center}"/ansible/bin/deploy-role dhcp-server \
+    || fail "Failed to deploy role:  dhcp-server"
+}
 
 function deploy_ansible_target() {
   if ! ssh -o passwordauthentication=no "ansible@${target}" whoami >/dev/null 2>&1; then
