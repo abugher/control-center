@@ -13,6 +13,3 @@
 [submodule "dicelessware"]
 	path = dicelessware
 	url = https://github.com/abugher/dicelessware
-[submodule "virtualization"]
-	path = virtualization
-	url = git@github.com:abugher/virtualization-environment.git
