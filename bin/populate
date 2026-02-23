@@ -159,7 +159,9 @@ function populate_superproject() {
     path_short="${paths_by_subproject[${subproject}]}"
     path_long="${superproject}/${path_short}"
     output "Attempting to populate as a superproject:  '${subproject}'"
-    populate_superproject "${superproject}/${path_long}"
+    # This will overwrite non-local variables.  Do not attempt to use them
+    # after this line.
+    populate_superproject "${path_long}"
   done
 }
 
