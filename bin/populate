@@ -68,6 +68,8 @@ function populate_subprojects() {
     fail "No superproject specified."
   fi
 
+  output "Populating superproject:  '${superproject}'"
+
   if ! test -e "${superproject}/.gitmodules"; then
     return 0
   fi
