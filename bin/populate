@@ -10,8 +10,9 @@ function main() {
   branch="$(git branch | grep '^\*' | sed 's/^* //')" \
     || fail "Failed to find branch."
 
+  configure_control_center
   populate_caches
-  populate_subprojects .
+  populate_superproject .
 }
 
 
@@ -21,6 +22,16 @@ function change_dir() {
 
   cd "${work_dir}" \
     || fail "Failed to change directory."
+}
+
+
+function configure_control_center() {
+  # Special handling for top level superproject "control-center".
+  clone="https://github.com/abugher/control-center.git"
+  pull="${clone}"
+  push="git@github.com:abugher/control-center.git"
+
+  configure_subproject
 }
 
 
@@ -63,7 +74,7 @@ function populate_cache() {
 }
 
 
-function populate_subprojects() {
+function populate_superproject() {
   local superproject="${1}"
   if test '' = "${superproject}"; then
     fail "No superproject specified."
@@ -107,70 +118,90 @@ function populate_subprojects() {
     # slashes will break matching.
     case "${path}" in
       'environment')
-        populate_repo_from_cache '../../../ansible-environment.git'
+        populate_subproject_from_cache '../../../ansible-environment.git'
         ;;
       'tasks/common')
-        populate_repo_from_cache '../../../../ansible-common-tasks.git'
+        populate_subproject_from_cache '../../../../ansible-common-tasks.git'
         ;;
       'inventory')
-        populate_repo_from_cache '../../../ansible-environment.git'
+        populate_subproject_from_cache '../../../ansible-environment.git'
         ;;
       'sensitive-inventory')
-        populate_repo_from_cache '../../../sensitive-ansible-environment.git'
+        populate_subproject_from_cache '../../../sensitive-ansible-environment.git'
         ;;
       'certificate-authority')
-        populate_repo_from_cache '../../../certificate-authority.git'
+        populate_subproject_from_cache '../../../certificate-authority.git'
         ;;
       'sensitive-certificate-authority')
-        populate_repo_from_cache '../../../sensitive-certificate-authority.git'
+        populate_subproject_from_cache '../../../sensitive-certificate-authority.git'
         ;;
       *)
         # Not a cached repo.
-        populate_repo_from_submodule_url
+        populate_subproject_from_url
         ;;
     esac
 
+
+  done
+
+  (
+    cd "${superproject}" \
+      || fail "Failed to enter superproject directory."
+    git submodule update \
+      || fail "Failed to update subprojects."
+  ) || fail "Failed to sync subprojects to specified versions for superproject:  '${superproject}'"
+
+
+  for subproject in "${subprojects[@]}"; do
     # Recurse.
-    populate_subprojects "${superproject}/${path}"
+    populate_superproject "${superproject}/${path}"
 
   done
 }
 
 
-function populate_repo_from_cache() {
+function populate_subproject_from_cache() {
   output "Populating subproject from cache:  path='${path}'; cache_path='${cache_path}'"
-  cache_path="${1}"
-  (
-    mkdir -p "${path}" \
-      || fail "Failed to create new repo directory:  '${path}'"
-    cd "${path}" \
-      || fail "Failed to enter new repo directory:  '${path}'"
-    git clone "${cache_path}" ./ \
-      || fail "Failed to clone repo from cache:  '${cache_path}'"
-    git checkout "${branch}" \
-      || fail "Failed to check out branch:  '${branch}'"
-    git remote set-url origin "${cache_path}" \
-      || fail "Failed to set pull URL to cache:  '${cache_path}'"
-    git remote set-url --push origin "${cache_path}" \
-      || fail "Failed to set push URL to cache:  '${cache_path}'"
-  ) || fail "Failed to populate repo from cache:  '${cache_path}'"
+  cache="${1}"
+  clone="${cache_path}"
+  pull="${cache_path}"
+  push="${cache_path}"
+  populate_subproject
 }
 
 
-function populate_repo_from_submodule_url() {
+function populate_subproject_from_url() {
   output "Populating subproject from submodule URL:  path='${path}'; url='${url}'"
-  git clone "${url}" "${path}" \
-    || fail "Failed to clone from URL:  '${url}'"
   repo_name="${url##*/}"
-  push_url="git@github.com:abugher/${repo_name}"
+  clone="${url}"
+  pull="${url}"
+  push="git@github.com:abugher/${repo_name}"
+  populate_subproject
+}
+
+
+populate_subproject() {
+  mkdir -p "${path}" \
+    || fail "Failed to create subproject directory:  '${path}'"
   (
     cd "${path}" \
-      || fail "Failed to enter repo path:  '${path}'"
-    git checkout "${branch}" \
-      || fail "Failed to check out branch:  '${branch}'"
-    git remote set-url --push origin "${push_url}" \
-      || fail "Failed to set push URL:  '${push_url}'"
-  ) || fail "Failed to populate repo from URL:  '${url}'"
+      || fail "Failed to enter subproject directory:  '${path}'"
+    git clone "${clone}" ./ \
+      || fail "Failed to clone repo from:  '${clone}'"
+    configure_subproject
+  ) || fail "Failed to populate subproject:  '${path}'"
+}
+
+
+function configure_subproject() {
+  git remote set-url origin "${pull}" \
+    || fail "Failed to set pull URL to:  '${pull}'"
+  git remote set-url --push origin "${push}" \
+    || fail "Failed to set push URL to:  '${push}'"
+  git checkout "${branch}" \
+    || fail "Failed to check out branch:  '${branch}'"
+  git push -u origin "${branch}" \
+    || fail "Failed to set upstream to branch:  '${branch}'"
 }
 
 
