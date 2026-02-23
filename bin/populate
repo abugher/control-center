@@ -103,7 +103,7 @@ function populate_superproject() {
       url="$(sed 's/ *url *= *//' <<< "${line}")"
       urls_by_subproject["${subproject}"]="${url}"
     fi
-  done < .gitmodules
+  done < "${superproject}/.gitmodules"
 
   for subproject in "${subprojects[@]}"; do
     url="${urls_by_subproject[${subproject}]}"
