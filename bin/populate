@@ -154,7 +154,8 @@ function populate_superproject() {
 
   for subproject in "${subprojects[@]}"; do
     # Recurse.
-    populate_superproject "${subproject}"
+    output "Attempting to populate as a superproject:  '${subproject}'"
+    populate_superproject "${superproject}/${subproject}"
   done
 }
 
