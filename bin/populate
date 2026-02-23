@@ -6,6 +6,10 @@
 
 function main() {
   change_dir
+
+  branch="$(git branch | grep '^\*' | sed 's/^* //')" \
+    || fail "Failed to find branch."
+
   populate_caches
   populate_subprojects .
 }
@@ -32,9 +36,6 @@ function populate_caches() {
     sensitive-ansible-inventory.git
     sensitive-certificate-authority.git
   )
-
-  branch="$(git branch | grep '^\*' | sed 's/^* //')" \
-    || fail "Failed to find branch."
 
   for repo in "${repos_untracked[@]}"; do
     populate_cache "git@github.com:abugher/${repo}"
@@ -68,11 +69,11 @@ function populate_subprojects() {
     fail "No superproject specified."
   fi
 
-  output "Populating superproject:  '${superproject}'"
-
   if ! test -e "${superproject}/.gitmodules"; then
     return 0
   fi
+
+  output "Populating superproject:  '${superproject}'"
 
   local subprojects=()
   unset paths_by_subproject
@@ -146,6 +147,8 @@ function populate_repo_from_cache() {
       || fail "Failed to enter new repo directory:  '${path}'"
     git clone "${cache_path}" ./ \
       || fail "Failed to clone repo from cache:  '${cache_path}'"
+    git checkout "${branch}" \
+      || fail "Failed to check out branch:  '${branch}'"
     git remote set-url origin "${cache_path}" \
       || fail "Failed to set pull URL to cache:  '${cache_path}'"
     git remote set-url --push origin "${cache_path}" \
@@ -162,11 +165,12 @@ function populate_repo_from_submodule_url() {
   push_url="git@github.com:abugher/${repo_name}"
   (
     cd "${path}" \
-      || fail "Failed to enter new repo path:  '${path}'"
+      || fail "Failed to enter repo path:  '${path}'"
+    git checkout "${branch}" \
+      || fail "Failed to check out branch:  '${branch}'"
     git remote set-url --push origin "${push_url}" \
       || fail "Failed to set push URL:  '${push_url}'"
-  ) || fail "Failed to set push URL for path:  '${path}'"
-
+  ) || fail "Failed to populate repo from URL:  '${url}'"
 }
 
 
