@@ -9,4 +9,4 @@
 	url = https://github.com/abugher/dicelessware
 [submodule "ansible-roles"]
 	path = ansible-roles
-	url = git@github.com:abugher/ansible-roles.git
+	url = https://github.com/abugher/ansible-roles.git
