@@ -154,8 +154,7 @@ function populate_superproject() {
 
   for subproject in "${subprojects[@]}"; do
     # Recurse.
-    populate_superproject "${path}"
-
+    populate_superproject "${subproject}"
   done
 }
 
