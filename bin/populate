@@ -97,26 +97,30 @@ function populate_superproject() {
       subproject="$(awk -F '"' '{print $2}' <<< "${line}")"
       subprojects+=( "${subproject}" )
     elif grep -q '^ *path *=' <<< "${line}"; then 
-      path="$(sed 's/ *path *= *//' <<< "${line}")"
-      paths_by_subproject["${subproject}"]="${path}"
+      paths_by_subproject["${subproject}"]="$(
+        sed 's/ *path *= *//' <<< "${line}"
+      )"
     elif grep -q '^ *url *=' <<< "${line}"; then 
-      url="$(sed 's/ *url *= *//' <<< "${line}")"
-      urls_by_subproject["${subproject}"]="${url}"
+      urls_by_subproject["${subproject}"]="$(
+        sed 's/ *url *= *//' <<< "${line}"
+      )"
     fi
   done < "${superproject}/.gitmodules"
 
   for subproject in "${subprojects[@]}"; do
     url="${urls_by_subproject[${subproject}]}"
-    path="${superproject}/${paths_by_subproject[${subproject}]}"
+    path_short="${paths_by_subproject[${subproject}]}"
+    path_long="${superproject}/${path_short}"
+    path="${path_long}"
     if test '' = "${url}"; then
       fail "No URL for subproject:  '${subproject}'"
-    elif test "${superproject}/" = "${path}"; then
+    elif test '' = "${path_short}"; then
       fail "No path for subproject:  '${subproject}'"
     fi
 
     # Each cache repo is handled specially.  Path must match exactly; trailing
     # slashes will break matching.
-    case "${path}" in
+    case "${path_short}" in
       'environment')
         populate_subproject_from_cache '../../../ansible-environment.git'
         ;;
@@ -140,8 +144,6 @@ function populate_superproject() {
         populate_subproject_from_url
         ;;
     esac
-
-
   done
 
   (
@@ -154,14 +156,16 @@ function populate_superproject() {
 
   for subproject in "${subprojects[@]}"; do
     # Recurse.
+    path_short="${paths_by_subproject[${subproject}]}"
+    path_long="${superproject}/${path_short}"
     output "Attempting to populate as a superproject:  '${subproject}'"
-    populate_superproject "${superproject}/${subproject}"
+    populate_superproject "${superproject}/${path_long}"
   done
 }
 
 
 function populate_subproject_from_cache() {
-  output "Populating subproject from cache:  path='${path}'; cache_path='${cache_path}'"
+  output "Populating subproject from cache:  path_long='${path_long}'; cache_path='${cache_path}'"
   cache="${1}"
   clone="${cache_path}"
   pull="${cache_path}"
@@ -171,7 +175,7 @@ function populate_subproject_from_cache() {
 
 
 function populate_subproject_from_url() {
-  output "Populating subproject from submodule URL:  path='${path}'; url='${url}'"
+  output "Populating subproject from submodule URL:  path_long='${path_long}'; url='${url}'"
   repo_name="${url##*/}"
   clone="${url}"
   pull="${url}"
@@ -181,15 +185,15 @@ function populate_subproject_from_url() {
 
 
 populate_subproject() {
-  mkdir -p "${path}" \
-    || fail "Failed to create subproject directory:  '${path}'"
+  mkdir -p "${path_long}" \
+    || fail "Failed to create subproject directory:  '${path_long}'"
   (
-    cd "${path}" \
-      || fail "Failed to enter subproject directory:  '${path}'"
+    cd "${path_long}" \
+      || fail "Failed to enter subproject directory:  '${path_long}'"
     git clone "${clone}" ./ \
       || fail "Failed to clone repo from:  '${clone}'"
     configure_subproject
-  ) || fail "Failed to populate subproject:  '${path}'"
+  ) || fail "Failed to populate subproject:  '${path_long}'"
 }
 
 
