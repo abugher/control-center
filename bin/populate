@@ -2,8 +2,17 @@
 
 
 function main() {
+  change_dir
   populate_caches
   populate_subprojects .
+}
+
+
+function change_dir() {
+  bin_dir="${0%/*}"
+
+  cd "${bin_dir}"/.. \
+    || fail "Failed to change directory."
 }
 
 
@@ -14,19 +23,31 @@ function populate_caches() {
     ansible-environment.git
     ansible-inventory.git
     certificate-authority.git
+  )
+  repos_untracked_sensitive=(
     sensitive-ansible-inventory.git
     sensitive-certificate-authority.git
   )
 
-
   for repo in "${repos_untracked[@]}"; do
     git clone --bare "https://git@github.com/abugher/${repo}" "${repo}" \
+      || fail "Failed to clone repo:  '${repo}'"
+  done
+  # Name of fileserver is hardcoded here.  Perhaps not ideal.
+  for repo in "${repos_untracked_sensitive[@]}"; do
+    git clone --bare "ansible@files:/storage/control-center/${repo}" "${repo}" \
       || fail "Failed to clone repo:  '${repo}'"
   done
 }
 
 
 function populate_subprojects() {
+  git submodule update --init --recursive \
+    || fail "Failed to build subproject hierarchy."
+}
+
+
+function populate_subprojects_heavy_handed() {
   superproject="${1}"
   if test '' = "${superproject}"; then
     fail "No superproject specified."
