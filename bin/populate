@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# It might be nice to have a repair mode that won't fail if some or all of the
+# repos already exist.
 
 
 function main() {
@@ -10,8 +13,9 @@ function main() {
 
 function change_dir() {
   bin_dir="${0%/*}"
+  work_dir="${bin_dir}/.."
 
-  cd "${bin_dir}"/.. \
+  cd "${work_dir}" \
     || fail "Failed to change directory."
 }
 
@@ -53,14 +57,14 @@ function clone_repo() {
 }
 
 
-function populate_subprojects() {
+function populate_subprojects_easy_mode() {
   git submodule update --init --recursive \
     || fail "Failed to build subproject hierarchy."
 }
 
 
-function populate_subprojects_heavy_handed() {
-  superproject="${1}"
+function populate_subprojects() {
+  local superproject="${1}"
   if test '' = "${superproject}"; then
     fail "No superproject specified."
   fi
@@ -69,7 +73,7 @@ function populate_subprojects_heavy_handed() {
     return 0
   fi
 
-  subprojects=()
+  local subprojects=()
   unset paths_by_subproject
   declare -A paths_by_subproject
   unset urls_by_subproject
@@ -90,23 +94,76 @@ function populate_subprojects_heavy_handed() {
 
   for subproject in "${subprojects[@]}"; do
     url="${urls_by_subproject[${subproject}]}"
-    path="${paths_by_subproject[${subproject}]}"
+    path="${superproject}/${paths_by_subproject[${subproject}]}"
     if test '' = "${url}"; then
       fail "No URL for subproject:  '${subproject}'"
-    elif test '' = "${path}"; then
+    elif test "${superproject}/" = "${path}"; then
       fail "No path for subproject:  '${subproject}'"
     fi
 
-    ####
-    ####
-    # I guess populate the subprojects here, then recurse.
-    # 
-    # Maybe handle the bare caches and their clones differently.
-    #
-    # Maybe, instead, the clones should have the bare projects as their URLs.
-    ####
-    ####
+    # Each cache repo is handled specially.  Path must match exactly; trailing
+    # slashes will break matching.
+    case "${path}" in
+      'environment')
+        populate_repo_from_cache '../../../ansible-environment.git'
+        ;;
+      'tasks/common')
+        populate_repo_from_cache '../../../../ansible-common-tasks.git'
+        ;;
+      'inventory')
+        populate_repo_from_cache '../../../ansible-environment.git'
+        ;;
+      'sensitive-inventory')
+        populate_repo_from_cache '../../../sensitive-ansible-environment.git'
+        ;;
+      'certificate-authority')
+        populate_repo_from_cache '../../../certificate-authority.git'
+        ;;
+      'sensitive-certificate-authority')
+        populate_repo_from_cache '../../../sensitive-certificate-authority.git'
+        ;;
+      *)
+        # Not a cached repo.
+        populate_repo_from_submodule_url
+        ;;
+    esac
+
+    # Recurse.
+    populate_subprojects "${superproject}/${path}"
+
   done
+}
+
+
+function populate_repo_from_cache() {
+  cache_path="${1}"
+  (
+    mkdir -p "${path}" \
+      || fail "Failed to create new repo directory:  '${path}'"
+    cd "${path}" \
+      || fail "Failed to enter new repo directory:  '${path}'"
+    git clone "${cache_path}" ./ \
+      || fail "Failed to clone repo from cache:  '${cache_path}'"
+    git remote set-url origin "${cache_path}" \
+      || fail "Failed to set pull URL to cache:  '${cache_path}'"
+    git remote set-url --push origin "${cache_path}" \
+      || fail "Failed to set push URL to cache:  '${cache_path}'"
+  ) || fail "Failed to populate repo from cache:  '${cache_path}'"
+}
+
+
+function populate_repo_from_submodule_url() {
+  git clone "${url}" "${path}" \
+    || fail "Failed to clone from URL:  '${url}'"
+  repo_name="${url##*/}"
+  push_url="git@github.com:abugher/${repo_name}"
+  (
+    cd "${path}" \
+      || fail "Failed to enter new repo path:  '${path}'"
+    git remote set-url --push origin "${push_url}" \
+      || fail "Failed to set push URL:  '${push_url}'"
+  ) || fail "Failed to set push URL for path:  '${path}'"
+
 }
 
 
