@@ -2,15 +2,24 @@
 
 find . -type d \
   | while read dir; do
-    echo "Checking:  ${dir}"
+    #echo "Checking:  ${dir}"
     cd "${dir}"
     if test -e .git && git remote show origin | grep -q 'github\.com'; then
       repo_name="$(git remote show origin | awk '/  Push/ {print $3}')"
       repo_name="${repo_name##*/}"
       repo_name="${repo_name%.git}"
-      echo "Fixing:  ${PWD} (${repo_name})"
-      git remote set-url origin "https://github.com/abugher/${repo_name}.git"
-      git remote set-url --push origin "git@github.com:abugher/${repo_name}.git"
+      pull_url_good="https://github.com/abugher/${repo_name}.git"
+      push_url_good="git@github.com:abugher/${repo_name}.git"
+      pull_url_current="$(git remote get-url origin)"
+      if ! test "${pull_url_current}" = "${pull_url_good}"; then
+        echo "Fixing pull URL:  ${PWD} (${repo_name})"
+        git remote set-url origin "${pull_url_good}"
+      fi
+      push_url_current="$(git remote get-url --push origin)"
+      if ! test "${push_url_current}" = "${push_url_good}"; then
+        echo "Fixing push URL:  ${PWD} (${repo_name})"
+        git remote set-url --push origin "${push_url_good}"
+      fi
     fi
     cd "${OLDPWD}"
   done
