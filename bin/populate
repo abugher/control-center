@@ -211,8 +211,13 @@ function output() {
 
 
 function fail() {
-  output "${1}" >&2
+  output "Error:  ${1}" >&2
   exit "${2:-1}"
+}
+
+
+function warn() {
+  output "Warning:  ${1}" >&2
 }
 
 
