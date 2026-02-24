@@ -37,46 +37,73 @@ function configure_control_center() {
 
 function populate_caches() {
   repos_untracked=(
-    ansible-common-tasks.git
-    ansible-environment.git
-    ansible-inventory.git
-    certificate-authority.git
+    ansible-common-tasks
+    ansible-environment
+    ansible-inventory
+    certificate-authority
   )
   repos_untracked_sensitive=(
-    sensitive-ansible-inventory.git
-    sensitive-certificate-authority.git
+    sensitive-ansible-inventory
+    sensitive-certificate-authority
   )
 
-  for repo in "${repos_untracked[@]}"; do
-    if ! grep -q "^${repo}\$" .gitignore; then
-      fail "Cache (bare) repo not listed in .gitignore:  '${repo}'"
-    fi
-    populate_cache "git@github.com:abugher/${repo}"
+  for repo_base_name in "${repos_untracked[@]}"; do
+    repo_bare="${repo_base_name}.git"
+    repo_sync="${repo_base_name}.sync"
+    repo_url="git@github.com:abugher/${repo_bare}"
+    check_ignored "${repo_bare}"
+    populate_cache 
   done
-  for repo in "${repos_untracked_sensitive[@]}"; do
-    if ! grep -q "^${repo}\$" .gitignore; then
-      fail "Cache (bare) repo not listed in .gitignore:  '${repo}'"
-    fi
+  for repo_base_name in "${repos_untracked_sensitive[@]}"; do
+    repo_bare="${repo_base_name}.git"
+    repo_sync="${repo_base_name}.sync"
+    repo_url="ansible@files:/storage/control-center/${repo_bare}"
+    check_ignored "${repo_bare}"
     # Name of fileserver is hardcoded here.  Perhaps it could come from
     # inventory, but inventory is not yet available.
-    populate_cache "ansible@files:/storage/control-center/${repo}"
+    populate_cache 
   done
 }
 
 
+function check_ignored() {
+  string="${1}"
+  if ! grep -q "^${string}\$" .gitignore; then
+    fail "Cache (bare) repo not listed in .gitignore:  '${repo_bare}'"
+  fi
+}
+
+
 function populate_cache() {
-  address="${1}"
-  output "Populating cache:  repo='${repo}'; address='${address}'"
-  git clone --bare "${address}" "${repo}" \
-    || fail "Failed to clone repo:  '${repo}'"
+  output "Populating cache:  repo_bare='${repo_bare}'; repo_url='${repo_url}'"
+  git clone --bare "${repo_url}" "${repo_bare}" \
+    || fail "Failed to clone repo:  '${repo_bare}'"
   ( 
-    cd "${repo}" \
-      || fail "Failed to change directory to repo:  '${repo}'"
+    cd "${repo_bare}" \
+      || fail "Failed to change directory to cache (bare) repo:  '${repo_bare}'"
     git symbolic-ref HEAD refs/heads/"${branch}" \
       || fail "Failed to set branch:  '${branch}'"
     git push -u origin "${branch}" \
-      || fail "Failed to set upstream for repo:  '${repo}'"
-  ) || fail "Failed to set branch and upstream for repo:  '${repo}'"
+      || fail "Failed to set upstream for cache (bare) repo:  '${repo_bare}'"
+  ) || fail "Failed to set branch and upstream for cache (bare) repo:  '${repo_bare}'"
+
+
+  output "Populating sync repo:  '${repo_sync}'"
+  # Go ahead and take advantage of the brand new local cache.
+  git clone "${repo_bare}" "${repo_sync}" \
+    || fail "Failed to create sync repo:  '${repo_sync}'"
+  (
+    cd "${repo_sync}" \
+      || fail "Failed to enter sync repo."
+    git remote set-url origin "${repo_url}" \
+      || fail "Failed to set pull URL for sync repo to address:  '${repo_url}'"
+    git remote set-url --push origin "../${repo_bare}"
+      || fail "Failed to set push URL for sync repo to path:  '${repo_bare}'"
+    git checkout "${branch}" \
+      || fail "Failed to checkout branch for sync repo:  '${branch}'"
+    git push -u origin "${branch}" \
+      || fail "Failed to set upstream for sync repo:  '${repo_bare}'"
+  ) || fail "Failed to populate and configure sync repo:  '${repo_sync}'"
 }
 
 
