@@ -110,6 +110,9 @@ function populate_superproject() {
   done < "${superproject}/.gitmodules"
 
   for subproject in "${subprojects[@]}"; do
+    if test '' = "${subproject}"; then
+      fail "Empty string listed as subproject."
+    fi
     url="${urls_by_subproject[${subproject}]}"
     path_short="${paths_by_subproject[${subproject}]}"
     path_long="${superproject}/${path_short}"
@@ -158,6 +161,10 @@ function populate_superproject() {
 
   for subproject in "${subprojects[@]}"; do
     # Recurse.
+    if test '' = "${subproject}"; then
+      fail "Empty string listed as subproject."
+    fi
+    output "DEBUG:  subproject='${subproject}'"
     path_short="${paths_by_subproject[${subproject}]}"
     path_long="${superproject}/${path_short}"
     output "Attempting to populate as a superproject:  '${path_long}'"
