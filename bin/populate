@@ -97,7 +97,7 @@ function populate_cache() {
       || fail "Failed to enter sync repo."
     git remote set-url origin "${repo_url}" \
       || fail "Failed to set pull URL for sync repo to address:  '${repo_url}'"
-    git remote set-url --push origin "../${repo_bare}"
+    git remote set-url --push origin "../${repo_bare}" \
       || fail "Failed to set push URL for sync repo to path:  '${repo_bare}'"
     git checkout "${branch}" \
       || fail "Failed to checkout branch for sync repo:  '${branch}'"
