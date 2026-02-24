@@ -165,12 +165,20 @@ function populate_superproject() {
       fail "Empty string listed as subproject."
     fi
     output "DEBUG:  subproject='${subproject}'"
+    ##
+    ## Is this coming up empty?
+    ##
     path_short="${paths_by_subproject[${subproject}]}"
+    output "DEBUG:  path_short='${path_short}'"
     path_long="${superproject}/${path_short}"
+    output "DEBUG:  path_long='${path_long}'"
     output "Attempting to populate as a superproject:  '${path_long}'"
-    # This will overwrite non-local variables.  Do not attempt to use them
-    # after this line.
+
+    # Subshell to avoid variable interference.
+    #( populate_superproject "${path_long}"; ) \
+    #  || fail "Failed to populate superproject:  '${path_long}'"
     populate_superproject "${path_long}"
+
   done
 }
 
