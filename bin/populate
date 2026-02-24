@@ -36,7 +36,6 @@ function configure_control_center() {
 
 
 function populate_caches() {
-  # These should all be listed in:  .gitignore
   repos_untracked=(
     ansible-common-tasks.git
     ansible-environment.git
@@ -49,10 +48,17 @@ function populate_caches() {
   )
 
   for repo in "${repos_untracked[@]}"; do
+    if ! grep -q "^${repo}\$" .gitignore; then
+      fail "Cache (bare) repo not listed in .gitignore:  '${repo}'"
+    fi
     populate_cache "git@github.com:abugher/${repo}"
   done
   for repo in "${repos_untracked_sensitive[@]}"; do
-    # Name of fileserver is hardcoded here.  Perhaps not ideal.
+    if ! grep -q "^${repo}\$" .gitignore; then
+      fail "Cache (bare) repo not listed in .gitignore:  '${repo}'"
+    fi
+    # Name of fileserver is hardcoded here.  Perhaps it could come from
+    # inventory, but inventory is not yet available.
     populate_cache "ansible@files:/storage/control-center/${repo}"
   done
 }
