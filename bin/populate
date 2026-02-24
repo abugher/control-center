@@ -192,7 +192,11 @@ function populate_subproject_from_url() {
   repo_name="${url##*/}"
   clone="${url}"
   pull="${url}"
-  push="git@github.com:abugher/${repo_name}"
+  if grep -q '^https://github.com/' <<< "${pull}"; then
+    push="git@github.com:abugher/${repo_name}"
+  else
+    push="${pull}"
+  fi
   populate_subproject
 }
 
@@ -212,9 +216,6 @@ populate_subproject() {
 
 
 function configure_subproject() {
-  debug pull
-  debug push
-  debug branch
   git remote set-url origin "${pull}" \
     || fail "Failed to set pull URL to:  '${pull}'"
   git remote set-url --push origin "${push}" \
