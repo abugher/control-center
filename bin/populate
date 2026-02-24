@@ -130,10 +130,10 @@ function populate_superproject() {
         populate_subproject_from_cache '../../../../ansible-common-tasks.git'
         ;;
       'inventory')
-        populate_subproject_from_cache '../../../ansible-environment.git'
+        populate_subproject_from_cache '../../../ansible-inventory.git'
         ;;
       'sensitive-inventory')
-        populate_subproject_from_cache '../../../sensitive-ansible-environment.git'
+        populate_subproject_from_cache '../../../sensitive-ansible-inventory.git'
         ;;
       'certificate-authority')
         populate_subproject_from_cache '../../../certificate-authority.git'
