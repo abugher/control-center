@@ -169,6 +169,7 @@ function populate_superproject() {
 
 
 function populate_subproject_from_cache() {
+  cache_path="${1}"
   output "Populating subproject from cache:  path_long='${path_long}'; cache_path='${cache_path}'"
   cache="${1}"
   clone="${cache_path}"
