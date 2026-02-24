@@ -164,20 +164,15 @@ function populate_superproject() {
     if test '' = "${subproject}"; then
       fail "Empty string listed as subproject."
     fi
-    output "DEBUG:  subproject='${subproject}'"
-    ##
-    ## This is coming up empty.
-    ##
     path_short="${paths_by_subproject[${subproject}]}"
-    output "DEBUG:  path_short='${path_short}'"
     path_long="${superproject}/${path_short}"
-    output "DEBUG:  path_long='${path_long}'"
     output "Attempting to populate as a superproject:  '${path_long}'"
 
-    # Subshell to avoid variable interference.
+    # Recursion seems to break associative arrays, even though `declare` is
+    # supposed to create local scope when used inside a function.  Creating a
+    # subshell seems to prevent this problem.
     ( populate_superproject "${path_long}"; ) \
       || fail "Failed to populate superproject:  '${path_long}'"
-    #populate_superproject "${path_long}"
 
   done
 }
@@ -185,7 +180,6 @@ function populate_superproject() {
 
 function populate_subproject_from_cache() {
   cache_path="${1}"
-  output "Populating subproject from cache:  path_long='${path_long}'; cache_path='${cache_path}'"
   cache="${1}"
   clone="${cache_path}"
   pull="${cache_path}"
@@ -195,7 +189,6 @@ function populate_subproject_from_cache() {
 
 
 function populate_subproject_from_url() {
-  output "Populating subproject from submodule URL:  path_long='${path_long}'; url='${url}'"
   repo_name="${url##*/}"
   clone="${url}"
   pull="${url}"
@@ -205,6 +198,7 @@ function populate_subproject_from_url() {
 
 
 populate_subproject() {
+  output "Populating subproject path:  '${path_long}'"
   mkdir -p "${path_long}" \
     || fail "Failed to create subproject directory:  '${path_long}'"
   (
@@ -218,6 +212,9 @@ populate_subproject() {
 
 
 function configure_subproject() {
+  debug pull
+  debug push
+  debug branch
   git remote set-url origin "${pull}" \
     || fail "Failed to set pull URL to:  '${pull}'"
   git remote set-url --push origin "${push}" \
@@ -242,6 +239,12 @@ function fail() {
 
 function warn() {
   output "Warning:  ${1}" >&2
+}
+
+
+function debug() {
+  var="${1}"
+  output "DEBUG:  ${var}='${!var}'"
 }
 
 
