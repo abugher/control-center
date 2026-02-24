@@ -94,7 +94,7 @@ It won't work.  You'll probably need to edit the script to refer to your own sou
 
 ## Sharing Difficulty
 
-I may have made collaboration difficult.  You will need to change things to use these roles, as described under [Usage](#usage).  If you then make some improvements to a role, it may be difficult to submit a pull request for the improvements while excluding changes that just reflect your different environment.
+I may have made collaboration difficult.  You will need to change things to use these roles, as described under [Sharing Roles](#sharing-roles).  If you then make some improvements to a role, it may be difficult to submit a pull request for the improvements while excluding changes that just reflect your different environment.
 
 I will try to improve that situation.
 
@@ -114,7 +114,9 @@ Before ansible can control a host, an operating system needs to be present.  Thi
 
 ## bin/generate-host
 
-This is used to automate many steps in the initial deployment of a host.  It has not been updated since before a major refactor, so it probably does not work at the moment.  Mostly some paths will need to be updated, I think.
+This is supposed to automate many steps in the initial deployment of a host.
+
+It has not been updated since before a major refactor, so it probably does not work at the moment.  Mostly some paths will need to be updated, I think.
 
 ## bin/populate
 
