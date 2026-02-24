@@ -166,7 +166,7 @@ function populate_superproject() {
     fi
     output "DEBUG:  subproject='${subproject}'"
     ##
-    ## Is this coming up empty?
+    ## This is coming up empty.
     ##
     path_short="${paths_by_subproject[${subproject}]}"
     output "DEBUG:  path_short='${path_short}'"
@@ -175,9 +175,9 @@ function populate_superproject() {
     output "Attempting to populate as a superproject:  '${path_long}'"
 
     # Subshell to avoid variable interference.
-    #( populate_superproject "${path_long}"; ) \
-    #  || fail "Failed to populate superproject:  '${path_long}'"
-    populate_superproject "${path_long}"
+    ( populate_superproject "${path_long}"; ) \
+      || fail "Failed to populate superproject:  '${path_long}'"
+    #populate_superproject "${path_long}"
 
   done
 }
