@@ -47,39 +47,34 @@ function populate_caches() {
     sensitive-certificate-authority
   )
 
+  mkdir -p cache \
+    || fail "Failed to create cache directory."
+
+  if ! grep -q '^cache$' .gitignore; then
+    fail "Cache directory (cache) is not listed in file:  .gitignore"
+  fi
+
   for repo_base_name in "${repos_untracked[@]}"; do
-    repo_bare="${repo_base_name}.git"
-    repo_sync="${repo_base_name}.sync"
-    repo_url="git@github.com:abugher/${repo_bare}"
-    check_ignored "${repo_bare}"
+    repo_url="git@github.com:abugher/${repo_base_name}.git"
     populate_cache 
   done
   for repo_base_name in "${repos_untracked_sensitive[@]}"; do
-    repo_bare="${repo_base_name}.git"
-    repo_sync="${repo_base_name}.sync"
-    repo_url="ansible@files:/storage/control-center/${repo_bare}"
-    check_ignored "${repo_bare}"
     # Name of fileserver is hardcoded here.  Perhaps it could come from
     # inventory, but inventory is not yet available.
+    repo_url="ansible@files:/storage/control-center/${repo_base_name}.git"
     populate_cache 
   done
-}
-
-
-function check_ignored() {
-  string="${1}"
-  if ! grep -q "^${string}\$" .gitignore; then
-    fail "Cache (bare) repo not listed in .gitignore:  '${repo_bare}'"
-  fi
 }
 
 
 function populate_cache() {
+  repo_bare="${repo_base_name}.git"
+  repo_sync="${repo_base_name}.sync"
   output "Populating cache:  repo_bare='${repo_bare}'; repo_url='${repo_url}'"
-  git clone --bare "${repo_url}" "${repo_bare}" \
+  git clone --bare "${repo_url}" "cache/${repo_bare}" \
     || fail "Failed to clone repo:  '${repo_bare}'"
   ( 
-    cd "${repo_bare}" \
+    cd "cache/${repo_bare}" \
       || fail "Failed to change directory to cache (bare) repo:  '${repo_bare}'"
     git symbolic-ref HEAD refs/heads/"${branch}" \
       || fail "Failed to set branch:  '${branch}'"
@@ -90,10 +85,10 @@ function populate_cache() {
 
   output "Populating sync repo:  '${repo_sync}'"
   # Go ahead and take advantage of the brand new local cache.
-  git clone "${repo_bare}" "${repo_sync}" \
+  git clone "cache/${repo_bare}" "cache/${repo_sync}" \
     || fail "Failed to create sync repo:  '${repo_sync}'"
   (
-    cd "${repo_sync}" \
+    cd "cache/${repo_sync}" \
       || fail "Failed to enter sync repo."
     git remote set-url origin "${repo_url}" \
       || fail "Failed to set pull URL for sync repo to address:  '${repo_url}'"
@@ -160,22 +155,22 @@ function populate_superproject() {
     # slashes will break matching.
     case "${path_short}" in
       'environment')
-        populate_subproject_from_cache '../../../ansible-environment.git'
+        populate_subproject_from_cache '../../../cache/ansible-environment.git'
         ;;
       'tasks/common')
-        populate_subproject_from_cache '../../../../ansible-common-tasks.git'
+        populate_subproject_from_cache '../../../../cache/ansible-common-tasks.git'
         ;;
       'inventory')
-        populate_subproject_from_cache '../../../ansible-inventory.git'
+        populate_subproject_from_cache '../../../cache/ansible-inventory.git'
         ;;
       'sensitive-inventory')
-        populate_subproject_from_cache '../../../sensitive-ansible-inventory.git'
+        populate_subproject_from_cache '../../../cache/sensitive-ansible-inventory.git'
         ;;
       'certificate-authority')
-        populate_subproject_from_cache '../../../certificate-authority.git'
+        populate_subproject_from_cache '../../../cache/certificate-authority.git'
         ;;
       'sensitive-certificate-authority')
-        populate_subproject_from_cache '../../../sensitive-certificate-authority.git'
+        populate_subproject_from_cache '../../../cache/sensitive-certificate-authority.git'
         ;;
       *)
         # Not a cached repo.

@@ -1,13 +1,1 @@
-ansible-common-tasks.git
-ansible-environment.git
-ansible-inventory.git
-certificate-authority.git
-sensitive-ansible-inventory.git
-sensitive-certificate-authority.git
-
-ansible-common-tasks.sync
-ansible-environment.sync
-ansible-inventory.sync
-certificate-authority.sync
-sensitive-ansible-inventory.sync
-sensitive-certificate-authority.sync
+cache
