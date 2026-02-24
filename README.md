@@ -15,6 +15,7 @@ These directories are used in deploying and managing code.  Most are subprojects
 * `git-automation` - Provides a tool, `g`, used to manage git operations on nested repos.
 * `os-deployment` - Tools to apply operating system images to boot media.
 * `bin` - Not a subproject.  Scripts for managing and using the contents of `control-center` (this repo).
+* `cache` - Not a subproject.  Ignored by git.  Repos in here are for caching purposes.
 
 ## Repo Naming
 
@@ -24,7 +25,7 @@ Expect each subproject of `ansible-roles`, to have an upstream repo name startin
 
 ## Caching Structure
 
-Additionally, this directory is expected to contain bare clones of the following repos.  These are not subprojects and should be listed in `.gitignore`.  These are used as a sort of local cache.  Each ansible role contains as a subproject a clone of some number of these.  Some are in all roles, while others are in only a few.  When the subprojects under each role undergo a `git pull` or `git push` operation, it should push or pull to/from the local cache.  That means the local cache needs to regularly sync with any networked upstream repo, but with about a hundred roles I can avoid making about a hundred redundant syncs.
+The `cache` directory is expected to contain bare clones of the following repos.  These are not subprojects and should be listed in `.gitignore`.  These are used as a sort of local cache.  Each ansible role contains as a subproject a clone of some number of these.  Some are in all roles, while others are in only a few.  When the subprojects under each role undergo a `git pull` or `git push` operation, it should push or pull to/from the local cache.  That means the local cache needs to regularly sync with any networked upstream repo, but with about a hundred roles I can avoid making about a hundred redundant syncs.
 
 * `ansible-common-tasks.git` - Each role has a copy of this at `tasks/common`.  Shared code to avoid redundant implementations.
 * `ansible-environment.git` - Each role has a copy of this at `environment`.  Execution environment for deploying roles to hosts.
