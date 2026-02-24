@@ -8,7 +8,7 @@
 
 ## Operational Structure
 
-These directories are used in deploying and managing code.  Most are subprojects.
+These directories are used in deploying and managing code.  Most are subprojects.  See [Tools](#tools) for further details.
 
 * `ansible-roles` - Full collection of my ansible roles.  If you like one, clone it recursively.  Expect to have to replace some subprojects, like inventory, with your own.
 * `dicelessware` - Password generation.
@@ -96,3 +96,29 @@ It won't work.  You'll probably need to edit the script to refer to your own sou
 I may have made collaboration difficult.  You will need to change things to use these roles, as described under [Usage](#usage).  If you then make some improvements to a role, it may be difficult to submit a pull request for the improvements while excluding changes that just reflect your different environment.
 
 I will try to improve that situation.
+
+# Tools
+
+## git-automation
+
+The `git-automation` subproject contains `bin/g`.  This is how I manage this hierarchy of repos.  It may be useful for other repos and hierarchies, but it makes some assumptions about how the repos are managed.  Check the documentation for details.
+
+## dicelessware
+
+Password generation.  This may only be used by `bin/generate-host`.
+
+## os-deployment
+
+Before ansible can control a host, an operating system needs to be present.  This contains tools for writing an OS to a boot medium and making initial adjustments to make it accessible enough for ansible to take over.
+
+## bin/generate-host
+
+This is used to automate many steps in the initial deployment of a host.  It has not been updated since before a major refactor, so it probably does not work at the moment.  Mostly some paths will need to be updated, I think.
+
+## bin/populate
+
+After cloning this repo non-recursively, I run this script to build the hierarchy of subprojects, install local caches, and adjust remote addresses used for push operations.  Basically, the `--recurse-submodules` option cannot be expected to produce the results I want, so I use this instead.
+
+## bin/fix-remotes
+
+Deprecated.  This crawls through subprojects, finds any remotes on github, and makes sure the push URL uses SSH instead of HTTPS.  It was useful when I was using `git clone --recurse-submodules ...` to install this repo.  Currently its job seems to get done by `bin/populate`.
