@@ -6,6 +6,22 @@
 
 # Structure
 
+## Branch Structure
+
+These branches are planned:
+
+* `dev`
+* `stg`
+* `prd`
+
+For each of these branches, I am keeping a separate local instance of this repo.  Every repo within the hierarchy is on the same branch.  Feature branches can be created for work on specific goals, but when the goal is complete the feature branch should be merged into the `dev` branch of the appropriate repo(s), and the subproject hierarchy of the `dev` branch of `control-center` should be updated to include the current `dev` branch of the affected repo(s).  This is facilitated by `git-automation/bin/g`.
+
+For now, I just hack on `dev` until whatever I'm working on seems to work, and then I leave it alone and hack on something else.  Deployments happen from `dev`, and if they go wrong I keep hacking until they go right.  Not everything works all the time.
+
+A pipeline is planned.
+
+A testing framework involving virtual machines is in progress.  When that works, a testing process for each repo will be necessary.  Then, preferably, the tests should be run automatically when any code is committed to `stg`.  When `stg` passes all tests, it can be synced to `prd`, possibly automatically.  When all that is in place, `prd` will be the branch from which deployments happen to real systems.
+
 ## Operational Structure
 
 These directories are used in deploying and managing code.  Most are subprojects.  See [Tools](#tools) for further details.
