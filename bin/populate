@@ -39,12 +39,6 @@ function populate_caches() {
   repos_untracked=(
     ansible-common-tasks
     ansible-environment
-    ansible-inventory
-    certificate-authority
-  )
-  repos_untracked_sensitive=(
-    sensitive-ansible-inventory
-    sensitive-certificate-authority
   )
 
   mkdir -p cache \
@@ -56,12 +50,6 @@ function populate_caches() {
 
   for repo_base_name in "${repos_untracked[@]}"; do
     repo_url="git@github.com:abugher/${repo_base_name}.git"
-    populate_cache 
-  done
-  for repo_base_name in "${repos_untracked_sensitive[@]}"; do
-    # Name of fileserver is hardcoded here.  Perhaps it could come from
-    # inventory, but inventory is not yet available.
-    repo_url="ansible@files:/storage/control-center/${repo_base_name}.git"
     populate_cache 
   done
 }
@@ -159,18 +147,6 @@ function populate_superproject() {
         ;;
       'tasks/common')
         populate_subproject_from_cache '../../../../cache/ansible-common-tasks.git'
-        ;;
-      'inventory')
-        populate_subproject_from_cache '../../../cache/ansible-inventory.git'
-        ;;
-      'sensitive-inventory')
-        populate_subproject_from_cache '../../../cache/sensitive-ansible-inventory.git'
-        ;;
-      'certificate-authority')
-        populate_subproject_from_cache '../../../cache/certificate-authority.git'
-        ;;
-      'sensitive-certificate-authority')
-        populate_subproject_from_cache '../../../cache/sensitive-certificate-authority.git'
         ;;
       *)
         # Not a cached repo.

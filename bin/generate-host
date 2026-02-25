@@ -62,7 +62,7 @@ function generate_ssh_host_keys() {
     fi
   done
 
-  cd "${control_center}/sensitive-ansible/inventory/hosts" \
+  cd "${control_center}/sensitive-ansible-inventory/hosts" \
     || fail "Failed to change directory to the sensitive inventory of hosts directory."
   mkdir -p "${target}/files/ssh_keys" \
     || fail "Failed to create directory for SSH private host key."
@@ -71,7 +71,7 @@ function generate_ssh_host_keys() {
   ssh-keygen -t rsa -b 4096 -C '' -f "${ssh_host_private_key}" < /dev/null \
     || fail "Failed to generate SSH host keys."
 
-  cd "${control_center}/ansible/inventory/hosts" \
+  cd "${control_center}/ansible-inventory/hosts" \
     || fail "Failed to change directory to the inventory of hosts directory."
   mkdir -p "${target}/files/ssh_keys" \
     || fail "Failed to create directory for SSH public host key."
@@ -111,7 +111,7 @@ function generate_ssh_root_keys() {
     fi
   done
 
-  cd "${control_center}/sensitive-ansible/inventory/hosts" \
+  cd "${control_center}/sensitive-ansible-inventory/hosts" \
     || fail "Failed to change directory to the sensitive inventory of hosts directory."
   mkdir -p "${target}/users/root/files/ssh_keys" \
     || fail "Failed to create directory for SSH private root key."
@@ -120,7 +120,7 @@ function generate_ssh_root_keys() {
   ssh-keygen -t rsa -b 4096 -C "root@${target}.${domain}" -f "${ssh_root_private_key}" < /dev/null \
     || fail "Failed to generate SSH root keys."
 
-  cd "${control_center}/ansible/inventory/hosts" \
+  cd "${control_center}/ansible-inventory/hosts" \
     || fail "Failed to change directory to the inventory of hosts directory."
   mkdir -p "${target}/users/root/files/ssh_keys" \
     || fail "Failed to create directory for SSH public root key."
@@ -135,7 +135,7 @@ function generate_ssh_root_keys() {
 
 function set_groups() {
   for group in "${groups[@]}"; do
-    group_file="${control_center}/ansible/inventory/inventory.d/${group}"
+    group_file="${control_center}/ansible-inventory/inventory.d/${group}"
     test -f "${group_file}" \
       || fail "No group file found for group:  ${group}"
     if grep -q "^${target}$" "${group_file}"; then
@@ -173,7 +173,7 @@ function set_host_vars() {
     reboot_hours=( 
       $(
         awk '/reboot_hour/ {print $2}' \
-          "${control_center}"/ansible/inventory/inventory.d/host_vars/*.yml \
+          "${control_center}"/ansible-inventory/inventory.d/host_vars/*.yml \
           | sed "s/'//g" \
           | sort
       ) 
@@ -219,7 +219,7 @@ function set_host_vars() {
 
 
 function allocate_ip_address() {
-  cd "${control_center}/ansible/inventory/inventory.d/host_vars/" \
+  cd "${control_center}/ansible-inventory/inventory.d/host_vars/" \
     || fail "Failed to change directory to host vars directory."
 
   ls -d *.yml >/dev/null 2>&1 \
@@ -252,7 +252,7 @@ function allocate_ip_address() {
 
 
 function allocate_ssh_unique_port() {
-  cd "${control_center}/ansible/inventory/inventory.d/host_vars/" \
+  cd "${control_center}/ansible-inventory/inventory.d/host_vars/" \
     || fail "Failed to change directory to host vars directory."
 
   ls -d *.yml >/dev/null 2>&1 \
@@ -423,13 +423,13 @@ pass_user="${USER}"
 script_name="${0##*/}"
 control_center="$(readlink -f "${0%/*}/..")" \
   || fail "Failed to get absolute path of control center."
-host_vars_file="${control_center}/ansible/inventory/inventory.d/host_vars/${target}.yml"
-ssh_host_private_key="${control_center}/sensitive-ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
-ssh_host_public_key="${control_center}/ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-ssh_host_public_key_unmoved="${control_center}/sensitive-ansible/inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
-ssh_root_private_key="${control_center}/sensitive-ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa"
-ssh_root_public_key="${control_center}/ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
-ssh_root_public_key_unmoved="${control_center}/sensitive-ansible/inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
+host_vars_file="${control_center}/ansible-inventory/inventory.d/host_vars/${target}.yml"
+ssh_host_private_key="${control_center}/sensitive-ansible-inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key"
+ssh_host_public_key="${control_center}/ansible-inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_host_public_key_unmoved="${control_center}/sensitive-ansible-inventory/hosts/${target}/files/ssh_keys/ssh_host_rsa_key.pub"
+ssh_root_private_key="${control_center}/sensitive-ansible-inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa"
+ssh_root_public_key="${control_center}/ansible-inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
+ssh_root_public_key_unmoved="${control_center}/sensitive-ansible-inventory/hosts/${target}/users/root/files/ssh_keys/id_rsa.pub"
 domain='neuronpointer.net'
 ip_address_network_segment='192.168.11'
 ip_address_network_segment_regex="$(sed 's/\./\\\./g' <<< "${ip_address_network_segment}")"

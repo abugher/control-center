@@ -10,3 +10,15 @@
 [submodule "ansible-roles"]
 	path = ansible-roles
 	url = https://github.com/abugher/ansible-roles.git
+[submodule "ansible-inventory"]
+	path = ansible-inventory
+	url = https://github.com/abugher/ansible-inventory
+[submodule "certificate-authority"]
+	path = certificate-authority
+	url = https://github.com/abugher/certificate-authority
+[submodule "sensitive-ansible-inventory"]
+	path = sensitive-ansible-inventory
+	url = ansible@files:/storage/control-center/sensitive-ansible-inventory.git
+[submodule "sensitive-certificate-authority"]
+	path = sensitive-certificate-authority
+	url = ansible@files:/storage/control-center/sensitive-certificate-authority.git
