@@ -36,9 +36,8 @@ function configure_control_center() {
 
 
 function populate_caches() {
-  repos_untracked=(
+  cache_repos=(
     ansible-common-tasks
-    ansible-environment
   )
 
   mkdir -p cache \
@@ -48,7 +47,7 @@ function populate_caches() {
     fail "Cache directory (cache) is not listed in file:  .gitignore"
   fi
 
-  for repo_base_name in "${repos_untracked[@]}"; do
+  for repo_base_name in "${cache_repos[@]}"; do
     repo_url="git@github.com:abugher/${repo_base_name}.git"
     populate_cache 
   done
