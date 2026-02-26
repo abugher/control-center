@@ -295,3 +295,26 @@ Problems may occur when using `g` to sync from an upstream with a new
 subproject to a repo previously lacking that subproject.  Further observation
 is required to confirm and potentially resolve this issue, but I have not been
 trying to use `g` in that way lately, so this is unconfirmed.
+
+# Git Configuration
+
+Just a note on proper global git configuration.  Here is mine, currently:
+
+    user.email=aaron@bugher.net
+    user.name=Aaron Bugher
+    init.defaultbranch=dev
+    commit.gpgsign=true
+
+`commit.gpgsign` means that commits will always be signed, even if `git commit`
+is run without the `-S` option.  `g` has `-S` in the standard options for `git
+commit`, but sometimes I use `git` directly, and I have a habit of typing `git
+commit` with no `-S`.  This makes sure commits get signed anyway.  Before I set
+this option (2026-02-26), there are lots of unsigned commits.  Commits should
+be consistently signed after this time, at least until I commit from a
+different host where I have forgotten to set the option.
+
+I do not (yet) have a good plan for how to ensure this option is set.  I would
+like to configure a repo to require signing, preferably by a trusted key,
+before accepting a commit.  Github provides options for this, but I would
+prefer to make git do this job in place rather than trusting a service to do
+it.  Ultimately, I might need my own gitlab instance to accomplish that goal.
