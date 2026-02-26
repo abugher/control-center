@@ -1,12 +1,3 @@
-# Assumptions
-
-## "subproject" vs "submodule"
-
-`man git submodule` refers to repos introduced as the subordinate end of a
-submodule relationship as `subprojects`.  I do the same.  Some of this might
-make more sense to you with the word `submodule` where you read `subproject`,
-depending on how you're used to discussing these things.
-
 # Structure
 
 ## Branch Structure
