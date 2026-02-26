@@ -120,6 +120,8 @@ the push URL uses SSH instead of HTTPS.  It was useful when I was using `git
 clone --recurse-submodules ...` to install this repo.  Currently its job seems
 to get done by `bin/populate`.
 
+This script is still useful until `populate` gets a repair mode, at least.
+
 ### bin/generate-host
 
 Broken.
