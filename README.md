@@ -188,6 +188,17 @@ Similarly named scripts are self-explanatory.
     deploy-role-to-hosts <role> <host[,host][...]|group> [ansible_args]
     deploy-role-to-localhost <role> [ansible_args]
 
+### Non-Deployment Scripts
+
+* `inventory` - See [Dynamic Inventory](#dynamic-inventory).
+
+* `list-roles` - Display the list of assigned roles for a host or hosts as
+would be applied by `deploy-hosts`0
+
+* `deptree` - Experimental:  Display list of assigned roles for a host or hosts
+along with any roles required by dependency relationships, in other words the
+full list of roles that would be applied by `deploy-hosts`.
+
 ## Ansible Inventory
 
 ### Dynamic Inventory
