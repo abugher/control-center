@@ -45,6 +45,7 @@ These directories are used in deploying and managing code.  Most are
 subprojects.
 
 * `os-deployment` - Tools to apply operating system images to boot media.
+* `ansible-environment` - Execution environment for ansible including configuration and deployment scripts.
 * `ansible-roles` - Full collection of my ansible roles.
 * `ansible-roles/*/environment` - Each role has a subproject containing ansible configuration and execution scripts.  See [Caching Structure](#caching-structure).
 * `ansible-roles/*/tasks/common` - Each role has a subproject containing a set of commonly used tasks.  See [Caching Structure](#caching-structure).
@@ -56,6 +57,9 @@ subprojects.
 * `dicelessware` - Password generation.
 * `cache` - Not a subproject.  Ignored by git.  Some repos are cached here to avoid redundant network pulls.  See [Caching Structure](#caching-structure).
 * `bin` - Not a subproject.  Scripts for managing and using the contents of `control-center` (this repo).
+
+Any directory or repo with a name starting with `sensitive-` should be
+unavailable to you.
 
 ## Caching Structure
 
@@ -69,7 +73,6 @@ the local cache needs to regularly sync with any networked upstream repo, but
 with about a hundred roles I can avoid making about a hundred redundant syncs.
 
 * `ansible-common-tasks.git` - Each role has a copy of this at `tasks/common`.  Shared code to avoid redundant implementations.
-* `ansible-environment.git` - Each role has a copy of this at `environment`.  Execution environment for deploying roles to hosts.
 
 In order to keep the cache directories synced with the network upstream, there
 is a working directory corresponding to each one, with the suffix `.sync`
@@ -79,173 +82,19 @@ pull to a bare repo, so each cache (bare) repo has a corresponding sync
 (working) repo, which can first pull from the upstream repo (github), then push
 to the cache.
 
-# Usage
-
-## OS Deployment
-
-Before ansible can control a host, an operating system needs to be present.
-`os-deployment` contains tools for writing an OS to a boot medium and making
-initial adjustments to make it accessible enough for ansible to take over.
-
-This repo is probably full of site-specific assumptions.  These should be
-replaced by references to the inventory where possible.
-
-## Ansible Roles
-
-You should probably start by making an empty local directory for ansible-roles,
-which I assume you will name `ansible-roles`.  Shop through `ansible-roles` and
-find a role you want to try, which I will imagine is named `target-role`.
-Clone that repo, including any subprojects, to `ansible-roles/target-role`.  
-
-    git clone --recurse-submodules https://github.com/abugher/ansible-role-target-role.git ansible-roles/target-role
-
-Check `meta` for any dependency relationships to another role, which I will
-imagine is named `requisite-role`.  Sync it to `ansible-roles/requisite-role`.
-Repeat as necessary, checking each dependency for further dependencies.
-
-    less ansible-roles/target-role/meta/main.yml
-    git clone --recurse-submodules https://github.com/abugher/ansible-role-requisite-role.git ansible-roles/requisite-role
-    less ansible-roles/requisite-role/meta/main.yml
-    ...
-
-Each role includes the same set of common tasks at `target-role/tasks/common`.
-Most roles consist a list of inclusions of common tasks at
-`target-role/tasks/main.yml` and a set of variable definitions at
-`target-role/vars/main.yml`.
-
-Each role includes the same execution environment at `target-role/environment`.
-In concept the configuration could be usable without modification, if you
-happen to run your systems just like I run mine, but some modification will
-probably be necessary.
-
-You almost certainly do not want the `inventory` subproject under each role,
-but you might want to refer to that repo for guidance on writing your own
-inventory, especially if you plan to use my deployment scripts.  See [Role
-Assignments](#role-assignments) for assumptions about how inventory should be
-structured.
-
-Any directory or repo with a name starting with `sensitive-` should be
-unavailable to you, so if you clone a role referring to one of those, you will
-need to create your own.
-
 If you end up using multiple roles, you might want to establish a local cache
-for some of the subprojects, as described under [Caching
-Structure](#caching-structure).
+with similar structure.
 
-These roles are written with Debian and a few Debian variants in mind.  The
-only package management system is `apt`, unless you count `python` packages.
-If you want to apply these roles to a different OS, you will probably need to
-modify `install_packages.yml` (under the `tasks/common` subproject in any role)
-to use a different package manager.  You may also need to define a slightly
-different list of package names in the role variables.  OS-specific paths to
-configuration, logs, etc will also need to be defined.  The necessary changes
-should be simple but extensive, I expect.
-
-I have tried to maintain the ability to skip role dependencies when deploying.
-This seems reasonable during development because it allows much more rapid
-deployments, which is very noticeable when repeatedly writing and testing small
-changes.  Currently, every meta file is expected to declare every dependency
-with the "dependency" tag.  That's pretty much two identical lines in addition
-to every actual dependency line, which really bothers me to look at.  However,
-when I need to adjust a configuration file, and the documentation is unclear,
-and the configured program is picky, it can be very helpful to try each new
-change rapidly.  Like so:
-
-    ./ansible-roles/target-role/environment/bin/deploy --skip-tags dependency
-
-## Ansible Environment
-
-This repo is expected to be a subproject of a repo defining an ansible role.  See `ansible.cfg` for further assumptions about the layout of the role repo.
-
-WARNING:  Do not attempt to use symbolic links to simulate the expected hierarchy of paths.  Doing so could break the deployment scripts.
-
-The inventory is expected to define hostgroups with the same names as roles.  Any host that is a member of a group with the same name as a role is considered to be assigned that role.
-
-
-### Deployment Scripts
-
-`bin/`
-
-Scripts to launch deployment of roles to hosts.  Any extra arguments after specified positional arguments will be passed to `ansible-playbook` directly.
-
-This is probably the simplest case:
-
-    deploy [ansible_args]
-
-Deploy the role defined by the repo containing this copy of this repo to a hostgroup of the same name.  For example, to deploy role `example` to hostgroup `example`:
-
-    ./example/environment/bin/deploy
-
-Older usage style is to name the role to be deployed.  That is still possible, for now:
-
-    deploy-role <role> [ansible_args]
-    deploy-role-to-hosts <role> <host_group|host_name[,host_name][...]> [ansible_args]
-
-Any role in a repo parallel to the role repo containing this copy of this repo can be named.
-
-It is also possible to deploy all roles assigned to a host to that host.
-
-    deploy-host <host> [ansible_args]
-
-This feels slightly awkward now that the environment is always a subproject of a role.  You have to pick a role (any role) and invoke the script from the environment subproject, but the role path is ignored.  So even if host `example` is not assigned role `example`, you can do this:
-
-    ./example/environment/bin/deploy-host example
-
-The host `example` will have all its roles applied, but the role `example` will not be applied.
-
-These commands generally expect a remote user named `ansible` with sudo
-privileges without a password requirement.  If the remote host does not yet
-meet those requirements, but you have credentials for root or a user with sudo
-privileges, you may be able to fix that like so:
-
-    deploy-role-as-user-to-hosts <role_name> <user_name> <host_group> [ansible args]...
-
-For example, if you know the password for `root@example`:
-
-    ./ansible-target/environment/bin/deploy-role-as-user-to-hosts ansible-target root example -k
-
-### Playbook
-
-`playbooks/`
-
-One generic playbook, `deploy.yml`, consisting mostly of variables, meant to be called by the scripts under `bin/`.
-
-
+# Usage
 
 ## Control Center
 
-Cloning `control-center` (this repo) is not recommended.  It has
-`ansible-roles` as a subproject, which in turn has ALL of my ansible roles as
-subprojects.  That is a lot.  You probably don't need it all.  Recursive git
-operations will be slow.
+You will need a control center, but you probably do not want my control center.
+You will need to replicate at least some of the directory structure here in
+order to make use of my ansible roles, deployment scripts, or other tools.  You
+might even name the top level directory `control-center` for simplicity.
 
-If you insist on trying, first clone this repo:
-
-    git clone https://github.com/abugher/control-center.git control-center
-
-Then check out the branch you want, probably `dev`:
-
-    cd control-center
-    git checkout dev
-
-Then run the `populate` script:
-
-    ./bin/populate
-
-It won't work.  You'll probably need to edit the script to refer to your own
-sources of sensitive information.  It may still not work, since the repos
-themselves contain submodule definitions referring to my own sources of
-sensitive information.
-
-### bin/generate-host
-
-This is supposed to automate many steps in establishing a new host.  It writes
-components of inventory, bootstraps the host into a valid target for ansible
-control, then deploys the roles assigned to the host by group membership in
-inventory.
-
-It has not been updated since before a major refactor, so it probably does not
-work at the moment.  Mostly some paths will need to be updated, I think.
+Cloning `control-center` (this repo) is not recommended.
 
 ### bin/populate
 
@@ -264,7 +113,175 @@ my own.
 
 ### bin/fix-remotes
 
-Deprecated.  This crawls through subprojects, finds any remotes on github, and
-makes sure the push URL uses SSH instead of HTTPS.  It was useful when I was
-using `git clone --recurse-submodules ...` to install this repo.  Currently its
-job seems to get done by `bin/populate`.
+Deprecated.
+
+This crawls through subprojects, finds any remotes on github, and makes sure
+the push URL uses SSH instead of HTTPS.  It was useful when I was using `git
+clone --recurse-submodules ...` to install this repo.  Currently its job seems
+to get done by `bin/populate`.
+
+### bin/generate-host
+
+Broken.
+
+This is supposed to automate many steps in establishing a new host.  It writes
+components of inventory, bootstraps the host into a valid target for ansible
+control, then deploys the roles assigned to the host by group membership in
+inventory.
+
+It has not been updated since before a major refactor, so it probably does not
+work at the moment.  Mostly some paths will need to be updated, I think.
+
+## OS Deployment
+
+Before ansible can control a host, an operating system needs to be present.
+`os-deployment` contains tools for writing an OS to a boot medium and making
+initial adjustments to make it accessible enough for ansible to take over.
+
+You can try to clone and use `os-deployment` if you want.  It might be helpful
+if you want to run Armbian devices in a similar manner to how I do.
+
+This repo is probably full of site-specific assumptions.  These should be
+replaced by references to the inventory where possible.  Pull requests are
+welcome.
+
+## Ansible Environment
+
+If you want to deploy any of these roles, you will probably want a copy of
+`ansible-environment` in your [control center](#control-center).
+
+### Configuration
+
+`ansible.cfg` may need to be modified to work with your environment.
+
+### Playbooks
+
+`playbooks/deploy.yml`
+
+This generic playbook, consisting mostly of variables, is meant to be called by
+the [Deployment Scripts](#deployment-scripts).
+
+### Deployment Scripts
+
+`bin/*`
+
+These scripts launch deployment of roles to hosts.  Any extra arguments after
+specified positional arguments will be passed to `ansible-playbook` directly.
+Simplest examples:
+
+    deploy-role <role> [ansible_args]
+    deploy-hosts <host[,host][...]|group> [ansible_args]
+
+`deploy-role` deploys `role` to all hosts directly assigned that role.
+`deploy-hosts` deploys all roles assigned to each host in `group` or a list of
+hosts to that host.  See [Ansible Inventory](#ansible-inventory) for how to
+assign a role to a host.
+
+These commands generally expect a remote user named `ansible` with sudo
+privileges with no password required.  If the remote host does not yet meet
+those requirements, but you have credentials for root or a user with sudo
+privileges, you may be able to fix that like so:
+
+    deploy-role-as-user-to-hosts <role> <user> <host[,host][...]|group> [ansible_args]
+
+For example, if you know the password for `root@example`:
+
+    deploy-role-as-user-to-hosts ansible-target root example -k
+
+Similarly named scripts are self-explanatory.
+
+    deploy-role-to-hosts <role> <host[,host][...]|group> [ansible_args]
+    deploy-role-to-localhost <role> [ansible_args]
+
+## Ansible Inventory
+
+You almost certainly do not want my inventory, but you replicate some of the
+structure.  Write your own inventory, and place it in your control center at
+`ansible-inventory`, parallel to `ansible-environment`.  The dynamic inventory
+script in my [ansible environment](#ansible-environment) and some other code
+expect it at that relative path.
+
+The inventory is expected to define hostgroups with the same names as roles.
+Any host that is a member of a group with the same name as a role is considered
+to be assigned that role.
+
+## Ansible Roles
+
+Cloning the entire `ansible-roles` repo is not recommended, although you
+probably could.  Instead, just create a directory named `ansible-roles` in your
+control center, parallel to `ansible-environment` if you are using that.  The
+configuration in my [ansible environment](#ansible-environment) expects that
+relative path for roles.
+
+Shop through `ansible-roles` and find a role you want to try, which I will
+imagine is named `target-role`.  Clone that repo, including any subprojects, to
+`ansible-roles/target-role`.  
+
+    git clone --recurse-submodules https://github.com/abugher/ansible-role-target-role.git ansible-roles/target-role
+
+Check `meta` for any dependency relationship to another role, which I will
+imagine is named `requisite-role`.  Sync it to `ansible-roles/requisite-role`.
+Repeat as necessary, checking each dependency for further dependencies.
+
+    less ansible-roles/target-role/meta/main.yml
+    git clone --recurse-submodules https://github.com/abugher/ansible-role-requisite-role.git ansible-roles/requisite-role
+    less ansible-roles/requisite-role/meta/main.yml
+    ...
+
+Each role includes the same set of common tasks at `target-role/tasks/common`.
+Most roles consist a list of inclusions of common tasks at
+`target-role/tasks/main.yml` and a set of variable definitions at
+`target-role/vars/main.yml`.
+
+### Operating System
+
+These roles are written with Debian and a few Debian variants in mind.  The
+only package management system is `apt`, unless you count `python` packages.
+If you want to apply these roles to a different OS, you will probably need to
+modify `install_packages.yml` (under the `tasks/common` subproject in any role)
+to use a different package manager.  You may also need to define a slightly
+different list of package names in the role variables.  OS-specific paths to
+configuration, logs, etc will also need to be defined.  The necessary changes
+should be simple but extensive, I expect.
+
+### Dependency Skipping
+
+I have tried to maintain the ability to skip role dependencies when deploying.
+This seems reasonable during development because it allows much more rapid
+deployments, which is very noticeable when repeatedly writing and testing small
+changes.  Currently, every meta file is expected to declare every dependency
+with the "dependency" tag.  That's pretty much two identical lines in addition
+to every actual dependency line, which really bothers me to look at.  However,
+when I need to adjust a configuration file, and the documentation is unclear,
+and the configured program is picky, it can be very helpful to try each new
+change rapidly.  Like so:
+
+    deploy-role-to-hosts example-role example-host --skip-tags dependency
+
+## Git Automation
+
+`g`:  *Use git as thoughtlessly as possible.*
+
+You can use this if you want to, but you definitely don't have to.  It will
+make repetitive operations on nested git repos much more convenient and more
+error prone.
+
+Clone the repo anywhere and symlink `bin/g` into your `PATH`.
+
+    g [commit_message]
+
+This command will pull any changes from upstream, then add, commit, and push
+any changes from the current working directory and any subdirectories that are
+git repos, recursively, depth first.  If a commit message is specified, it will
+be applied to all commits; otherwise, git will start an editor for a message
+for each commit.
+
+The branch for the top level directory will be checked out for each subproject
+and subdirectory.
+
+Collisions will stop the show.  That is probably good, but it is annoying.
+
+Problems may occur when using `g` to sync from an upstream with a new
+subproject to a repo previously lacking that subproject.  Further observation
+is required to confirm and potentially resolve this issue, but I have not been
+trying to use `g` in that way lately, so this is unconfirmed.

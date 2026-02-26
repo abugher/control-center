@@ -22,3 +22,6 @@
 [submodule "sensitive-certificate-authority"]
 	path = sensitive-certificate-authority
 	url = ansible@files:/storage/control-center/sensitive-certificate-authority.git
+[submodule "ansible-environment"]
+	path = ansible-environment
+	url = https://github.com/abugher/ansible-environment.git
