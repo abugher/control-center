@@ -98,6 +98,8 @@ Cloning `control-center` (this repo) is not recommended.
 
 ### bin/populate
 
+This script will almost certainly not work for you.
+
 After cloning `control-center` non-recursively, I run `bin/populate` to build
 the hierarchy of subprojects, install local caches, and adjust remote addresses
 used for push operations.  Basically, the `--recurse-submodules` option cannot
@@ -196,6 +198,21 @@ Similarly named scripts are self-explanatory.
     deploy-role-to-localhost <role> [ansible_args]
 
 ## Ansible Inventory
+
+### Dynamic Inventory
+
+Technically `ansible.cfg` specifies a script at
+`ansible-environment/bin/inventory` as the dynamic inventory.  That script
+regurgitates the [static inventory](#static-inventory).
+
+I have plans to use the script to make modifications to the inventory.  For
+example, if a host is assigned a role that depends on a second role, the
+dynamic inventory might assign the host the second role as well, so that
+`deploy-role` could deploy a role to all hosts where it should be installed,
+instead of just hosts directly assigned that role.  This is still just an idea,
+though.
+
+### Static Inventory
 
 You almost certainly do not want my inventory, but you replicate some of the
 structure.  Write your own inventory, and place it in your control center at
