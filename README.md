@@ -164,13 +164,19 @@ These scripts launch deployment of roles to hosts.  Any extra arguments after
 specified positional arguments will be passed to `ansible-playbook` directly.
 Simplest examples:
 
-    deploy-role <role> [ansible_args]
     deploy-hosts <host[,host][...]|group> [ansible_args]
+    deploy-role <role> [ansible_args]
 
-`deploy-role` deploys `role` to all hosts directly assigned that role.
-`deploy-hosts` deploys all roles assigned to each host in `group` or a list of
-hosts to that host.  See [Ansible Inventory](#ansible-inventory) for how to
-assign a role to a host.
+`deploy-hosts` deploys all assigned roles to each host in `group` or a list of
+hosts.  If assigned roles depend on further roles those will also be deployed
+to the targeted hosts.
+
+`deploy-role` deploys `role` to every host to which `role` is assigned and to
+any host to which a role is assigned that depends on `role`, including indirect
+dependencies.  If `role` depends on further roles, those will also be deployed
+to all targeted hosts.
+
+See [Ansible Inventory](#ansible-inventory) for how to assign a role to a host.
 
 These commands generally expect a remote user named `ansible` with sudo
 privileges with no password required.  If the remote host does not yet meet
@@ -190,14 +196,39 @@ Similarly named scripts are self-explanatory.
 
 ### Non-Deployment Scripts
 
-* `inventory` - See [Dynamic Inventory](#dynamic-inventory).
+`inventory` - See [Dynamic Inventory](#dynamic-inventory) for full discussion.
 
-* `list-roles` - Display the list of assigned roles for a host or hosts as
-would be applied by `deploy-hosts`0
+These options make it a valid dynamic inventory script for use with `ansible` and `ansible-playbook`.
 
-* `deptree` - Experimental:  Display list of assigned roles for a host or hosts
-along with any roles required by dependency relationships, in other words the
-full list of roles that would be applied by `deploy-hosts`.
+  `inventory --list`
+  `inventory --host`
+
+These options expose similarly named internal functions.
+
+    inventory json-basic
+
+Like `--list`, output the statically defined inventory as JSON.
+
+    inventory list-roles
+    inventory list-groups
+
+List all roles or all groups.
+
+    inventory list-roles-for-role <role>
+
+List roles depended on by a role including indirect dependencies.
+
+    inventory list-hosts-for-role-explicit <role>
+    inventory list-hosts-for-role-implicit <role>
+    inventory list-roles-for-host-explicit <host>
+    inventory list-roles-for-host-implicit <host>
+    inventory list-roles-for-host-tree <host>
+
+List either roles that should be assigned to a host or hosts to which a role is
+assigned.  Explicit means the host is assigned the role.  Implicit means the
+host is assigned the role or is assigned a role that depends on the role.  Tree
+means the information will visually organized according to dependency depth.
+
 
 ## Ansible Inventory
 
@@ -205,14 +236,17 @@ full list of roles that would be applied by `deploy-hosts`.
 
 Technically `ansible.cfg` specifies a script at
 `ansible-environment/bin/inventory` as the dynamic inventory.  That script
-regurgitates the [static inventory](#static-inventory).
+regurgitates the [static inventory](#static-inventory) when invoked by ansible
+as its dynamic inventory.  It can also be called with one of a number of
+arguments to provide listings information beyond what is in the static
+inventory, including hosts belonging to groups and roles depending on other
+roles.
 
-I have plans to use the script to make modifications to the inventory.  For
-example, if a host is assigned a role that depends on a second role, the
-dynamic inventory might assign the host the second role as well, so that
-`deploy-role` could deploy a role to all hosts where it should be installed,
-instead of just hosts directly assigned that role.  This is still just an idea,
-though.
+The functions used in the `inventory` script are also used by the deployment
+scripts to make use of information not directly available from the static
+inventory, including which hosts are implicitly assigned a role, meaning the
+host is part of a hostgroup sharing a name with a role with a dependency
+relationship with the role in question.
 
 ### Static Inventory
 
