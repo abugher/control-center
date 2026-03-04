@@ -198,12 +198,14 @@ You can also deploy a specific role to a specific host:
 
 You can also deploy to localhost, avoiding the need for SSH:
 
-    deploy-role-to-localhost <role> <host> [ansible_args]
+    deploy-role-to-localhost <role> [ansible_args]
 
-Note that you still need to supply the hostname.  Some roles rely on host
-variables from the inventory, so it wise to specify the host, even if it is
-also reachable as `localhost`.  The `-K` option might also be necessary, unless
-the current user account can use `sudo` with no password.
+Make sure the environment variable `HOSTNAME` is set and matches any inventory
+entries.  The script uses that name as the target hostname, so host variables
+and group membership for that hostname will be applied.
+
+The `-K` option might be necessary unless the current user account can use
+`sudo` with no password.
 
 ### Non-Deployment Scripts
 
