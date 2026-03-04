@@ -192,10 +192,18 @@ For example, if you know the password for `root@example`:
 
     deploy-role-as-user-to-hosts ansible-target root example -k
 
-Similarly named scripts are self-explanatory.
+You can also deploy a specific role to a specific host:
 
     deploy-role-to-hosts <role> <host[,host][...]|group> [ansible_args]
-    deploy-role-to-localhost <role> [ansible_args]
+
+You can also deploy to localhost, avoiding the need for SSH:
+
+    deploy-role-to-localhost <role> <host> [ansible_args]
+
+Note that you still need to supply the hostname.  Some roles rely on host
+variables from the inventory, so it wise to specify the host, even if it is
+also reachable as `localhost`.  The `-K` option might also be necessary, unless
+the current user account can use `sudo` with no password.
 
 ### Non-Deployment Scripts
 
