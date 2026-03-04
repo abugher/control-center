@@ -129,6 +129,9 @@ work at the moment.  Mostly some paths will need to be updated, I think.
 
 ## OS Deployment
 
+See the [os-deployment repo](../../../os-deployment) for detailed
+documentation.
+
 Before ansible can control a host, an operating system needs to be present.
 `os-deployment` contains tools for writing an OS to a boot medium and making
 initial adjustments to make it accessible enough for ansible to take over.
