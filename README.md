@@ -78,14 +78,117 @@ with similar structure.
 
 # Usage
 
+## Usage Example
+
+See the sections below for details and explanations.  This is an example of how
+to make use of one of the ansible roles available here.
+
+### Get a Role
+
+Refer to [Ansible Roles](#ansible-roles).
+
+    mkdir control-center
+    cd control-center
+    mkdir ansible-roles
+    git clone --recurse-submodules https://github.com/abugher/ansible-role-ansible-target.git ansible-roles/ansible-target
+
+Note that the uptream repo is named `ansible-role-ansible-target.git`, and the
+directory created is just `ansible-target` under `ansible-roles`.  This naming
+and placement convention is required by my ansible configuration and role
+dependency definitions.
+
+### Check for Dependencies
+
+    cat ansible-roles/ansible-target/meta/main.yml
+
+This particular role should have no dependencies.  If any is listed, [get each
+role](#get-a-role) and then [check it for
+dependencies](#check-for-dependencies).
+
+Once you have the role and its dependencies, you might have enough to work
+with.  You will need to write a playbook to deploy the target role, and you
+will probably need to define some inventory.  If you have handled that, skip
+ahead to [Deploy a Role](#deploy-a-role).  Otherwise, continue with the next
+sections.
+
+
+### Get the Execution Environment
+
+Refer to [Ansible Environment](#ansible-environment).
+
+    git clone https://github.com/abugher/ansible-environment.git ./ansible-environment
+
+Now you have some deployment scripts and ansible configuration.  You will still need inventory.
+
+### Get MY Inventory
+
+Refer to [Ansible Inventory](#ansible-inventory).  
+
+    git clone https://github.com/abugher/ansible-inventory.git ansible-inventory-example
+
+Note that this is *my* inventory.  It probably won't be useful to you as
+written, but it should illustrate what my roles and execution scripts expect to
+find as you [compose *your* inventory](#compose-your-inventory).
+
+### Compose YOUR Inventory
+
+You'll have to do some work, here.  Read through the role for references to
+inventory, including hostvars and hostgroup membership.  Write the expected
+definitions.  Refer to my inventory for guidance, if necessary.
+
+Observe this role for references to inventory.
+
+    less ansible-roles/ansible-target/tasks/main.yml
+
+Observe definitions in example inventory.
+
+    grep -r ansible-target ansible-inventory-example/ 2>&1 | grep -v '\.git'
+    grep -r ansible-master ansible-inventory-example/ 2>&1 | grep -v '\.git'
+    grep -r ansible_master_user ansible-inventory-example/ 2>&1 | grep -v '\.git'
+
+Compose a similar new inventory.  **WARNING**:  Some of these lines will
+clobber existing inventory.  If you don't have any existing inventory, that
+should be fine.  Modify as necessary; this is just an example.
+
+    mkdir -p ansible-inventory/inventory.d/host_vars
+    printf '%s\n%s\n' "[ansible-target]" "${HOSTNAME}" > ansible-inventory/inventory.d/ansible-target
+    printf '%s\n%s\n' "[ansible-master]" "${HOSTNAME}" > ansible-inventory/inventory.d/ansible-master
+    printf '%s\n' "[ansible-master-extended]" > ansible-inventory/inventory.d/ansible-master-extended
+    printf -- '---\n%s\n' "ansible_master_user:  '${USER}'" > ansible-inventory/inventory.d/host_vars/"${HOSTNAME}".yml
+    mkdir -p ansible-inventory/hosts/"${HOSTNAME}"/users/"${USER}"/files/ssh_keys/
+    cp ~/.ssh/id_rsa.pub ansible-inventory/hosts/"${HOSTNAME}"/users/"${USER}"/files/ssh_keys/id_rsa.pub
+    printf '%s\n' '[all:vars]' > ansible-inventory/inventory.d/vars
+    grep '^inventory_path=' ansible-inventory-example/inventory.d/vars >> ansible-inventory/inventory.d/vars
+
+### Deploy a Role
+
+If this workstation is not yet configured with `ansible-target` and `sshd`
+roles, but your user account can run `sudo` with a password, deploy like so:
+
+    ./ansible-environment/bin/deploy-role-to-localhost ansible-target -K
+
+If ansible complains that something is undefined or empty, continue to [compose
+your inventory](#compose-your-inventory).
+
+### Deploy More Roles
+
+Now that your workstation has become a valid ansible target with the
+`ansible-target` role, you may want to deploy `ansible-master` as well.  Repeat
+the above steps, improvising as necessary for the new role.  The role
+`ssh-client` will be required by `ansible-master`.  Consider also deploying the
+role `sshd`, for matching configuration.  With all of those deployed, you
+should be able to deploy subsequent roles over SSH with no password.  See
+[Deployment Scripts](#deployment-scripts).
+
+
 ## Control Center
+
+Cloning `control-center` (this repo) is not recommended.
 
 You will need a control center, but you probably do not want my control center.
 You will need to replicate at least some of the directory structure here in
 order to make use of my ansible roles, deployment scripts, or other tools.  You
 might even name the top level directory `control-center` for simplicity.
-
-Cloning `control-center` (this repo) is not recommended.
 
 ### bin/populate
 
