@@ -256,9 +256,33 @@ structure.  Write your own inventory, and place it in your control center at
 script in my [ansible environment](#ansible-environment) and some other code
 expect it at that relative path.
 
+#### Role Assignment
+
 The inventory is expected to define hostgroups with the same names as roles.
 Any host that is a member of a group with the same name as a role is considered
 to be assigned that role.
+
+#### Static Inventory Structure
+
+`inventory/hosts/` contains files specific to hosts, such as certain public
+keys.  Contents here should be kept to a minimum.
+
+`inventory/inventory.d/*.yml` are group definition files, one per group, named
+for the group.
+
+`inventory/inventory.d/vars` contains global variables.  The domain name and
+time zone are set here, for example.
+
+`inventory/inventory.d/host_vars/` contains host variable definition files, one
+per host, named for the host, containing details like IP address, MAC address,
+and platform.
+
+#### Dashes in Inventory
+
+Group names contain dashes.  Ansible will throw warnings and errors about this
+by default, but those should be suppressed if possible.  Be careful, though:
+Always refer to `groups['group-name']`, never to `groups.group-name`.  Python
+variable names are not allowed to contain dashes.
 
 ## Ansible Roles
 
