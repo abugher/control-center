@@ -366,11 +366,11 @@ relationship with the role in question.
 
 ### Static Inventory
 
-You almost certainly do not want my inventory, but you replicate some of the
-structure.  Write your own inventory, and place it in your control center at
-`ansible-inventory`, parallel to `ansible-environment`.  The dynamic inventory
-script in my [ansible environment](#ansible-environment) and some other code
-expect it at that relative path.
+You almost certainly do not want my inventory, but you could replicate some of
+the structure.  Write your own inventory, and place it in your control center
+at `ansible-inventory`, parallel to `ansible-environment`.  The dynamic
+inventory script in my [ansible environment](#ansible-environment) and some
+other code expect it at that relative path.
 
 #### Role Assignment
 
@@ -380,18 +380,31 @@ to be assigned that role.
 
 #### Static Inventory Structure
 
+My static inventory is distributed across many files, with some in INI format
+and some in YAML format.  You have other options, like using a single YAML file
+for the whole inventory.
+
+`inventory/inventory.d/` contains actual ansible inventory structure.  The
+dynamic inventory script(s) pass this location as the location of the static
+inventory to `ansible-inventory`.  
+
+*Note*:  Anything outside this directory is technically not part of the ansible
+inventory structure, but if I consider it inventory information, it is kept in
+the same repo.
+
+Non-directory files under this path are group definition files, in INI format,
+one per group, named for the group.
+
+`inventory/inventory.d/vars` contains global variables in INI format.  The
+domain name and time zone are set here, for example.
+
+`inventory/inventory.d/host_vars/` contains host variable definition files, in
+YAML format, one per host, named for the host, containing details like IP
+address, MAC address, and platform.
+
 `inventory/hosts/` contains files specific to hosts, such as certain public
 keys.  Contents here should be kept to a minimum.
 
-`inventory/inventory.d/*.yml` are group definition files, one per group, named
-for the group.
-
-`inventory/inventory.d/vars` contains global variables.  The domain name and
-time zone are set here, for example.
-
-`inventory/inventory.d/host_vars/` contains host variable definition files, one
-per host, named for the host, containing details like IP address, MAC address,
-and platform.
 
 #### Dashes in Inventory
 
