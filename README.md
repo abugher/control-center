@@ -157,8 +157,8 @@ should be fine.  Modify as necessary; this is just an example.
     printf -- '---\n%s\n' "ansible_master_user:  '${USER}'" > ansible-inventory/inventory.d/host_vars/"${HOSTNAME}".yml
     mkdir -p ansible-inventory/hosts/"${HOSTNAME}"/users/"${USER}"/files/ssh_keys/
     cp ~/.ssh/id_rsa.pub ansible-inventory/hosts/"${HOSTNAME}"/users/"${USER}"/files/ssh_keys/id_rsa.pub
-    printf '%s\n' '[all:vars]' > ansible-inventory/inventory.d/vars
-    grep '^inventory_path=' ansible-inventory-example/inventory.d/vars >> ansible-inventory/inventory.d/vars
+    printf '%s\n' '[all:vars]' > ansible-inventory/inventory.d/all
+    grep '^inventory_path=' ansible-inventory-example/inventory.d/all >> ansible-inventory/inventory.d/all
 
 ### Deploy a Role
 
@@ -395,7 +395,7 @@ the same repo.
 Non-directory files under this path are group definition files, in INI format,
 one per group, named for the group.
 
-`inventory/inventory.d/vars` contains global variables in INI format.  The
+`inventory/inventory.d/all` contains global variables in INI format.  The
 domain name and time zone are set here, for example.
 
 `inventory/inventory.d/host_vars/` contains host variable definition files, in
